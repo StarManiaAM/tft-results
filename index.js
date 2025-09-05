@@ -1,6 +1,8 @@
-require('dotenv/config');
-// Require the necessary discord.js classes
-const { Client, Events, GatewayIntentBits } = require('discord.js');
+import 'dotenv/config';
+import { Client, GatewayIntentBits, Events } from 'discord.js';
+import sqlite3 from "sqlite3";
+import { init } from "./utils/sql.js";
+import { startRiotHandler } from './handlers/new_game.js';
 
 // Create a new client instance
 const client = new Client({
@@ -9,19 +11,15 @@ const client = new Client({
         GatewayIntentBits.GuildMessages
     ] });
 
-// When the client is ready, run this code (only once).
-// The distinction between `client: Client<boolean>` and `readyClient: Client<true>` is important for TypeScript developers.
-// It makes some properties non-nullable.
-client.once(Events.ClientReady, readyClient => {
+// Create the database
+const db = new sqlite3.Database("database/database.db", sqlite3.OPEN_READWRITE);
+
+// Once client is ready, run the bot
+client.once(Events.ClientReady, async readyClient => {
     console.log(`Ready! Logged in as ${readyClient.user.tag}`);
-    // Use wanted ChannelID
-    const channel = client.channels.cache.get(process.env.CHANNEL_ID);
-    if (channel) {
-        channel.send("Hello! I'm online 🚀");
-    } else {
-        console.error("Channel not found. Did you use the correct ID?");
-    }
+    await init(db);
+    await startRiotHandler(client, process.env.CHANNEL_ID);
 });
 
 // Log in to Discord with your client's token
-client.login(process.env.DISCORD_CLIENT_TOKEN)
+await client.login(process.env.DISCORD_CLIENT_TOKEN);

@@ -2,10 +2,12 @@
 .vscode/
 .idea/
 
-Dependency files
+# Dependency files
 package-lock.json
-package.json
 eslint.config.js
+
+# Database
+database/
 
 # Logs
 logs
