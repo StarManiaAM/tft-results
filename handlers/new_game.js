@@ -1,29 +1,4 @@
-import axios from 'axios';
-const RIOT_API_KEY = process.env.RIOT_API_KEY;
-
-async function getPUUID(region, name, tag) {
-    const res = await axios.get(
-        `https://${region}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${name}/${tag}`,
-        { headers: { "X-Riot-Token": RIOT_API_KEY } }
-    );
-    return res.data.puuid;
-}
-
-async function getLastMatch(puuid, region) {
-    const res = await axios.get(
-        `https://${region}.api.riotgames.com/tft/match/v1/matches/by-puuid/${puuid}/ids?start=0&count=1`,
-        { headers: { "X-Riot-Token": RIOT_API_KEY } }
-    );
-    return res.data[0];
-}
-
-async function getMatchInfo(region, puuid, match){
-    const res = await axios.get(
-        `https://${region}.api.riotgames.com/tft/match/v1/matches/${match}`,
-        { headers: { "X-Riot-Token": RIOT_API_KEY } }
-    );
-    return res.data;
-}
+import { getPUUID, getLastMatch, getMatchInfo } from '../utils/api.js'
 
 async function startRiotHandler(client, channelId) {
     const channel = client.channels.cache.get(channelId);
@@ -31,12 +6,13 @@ async function startRiotHandler(client, channelId) {
         console.error("Channel not found!");
         return;
     }
-    const puuid = await getPUUID('europe', 'User', 'tag');
+    const puuid = await getPUUID('europe', 'user', 'tag');
+
     let lastMatch = await getLastMatch(puuid, 'europe');
 
     async function refreshMatch() {
         const last = await getLastMatch(puuid, 'europe');
-        if (last !== lastMatch) {
+        if (lastMatch !== last) {
             lastMatch = last;
             const matchInfo = await getMatchInfo('europe', puuid, last);
             let place = matchInfo.info.participants.find(p => p.puuid === puuid).placement;

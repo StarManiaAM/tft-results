@@ -24,6 +24,7 @@
     "djs-commander": "^0.0.50",
     "dotenv": "^17.2.2",
     "nodemon": "^3.1.10",
+    "sequelize": "^6.37.7",
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
