@@ -1,4 +1,5 @@
-import { getPUUID, getLastMatch, getMatchInfo } from '../utils/api.js'
+import { getLastMatch, getMatchInfo } from '../utils/api.js'
+import { get_all_users, update_last_match } from '../utils/sql.js'
 
 async function startRiotHandler(client, channelId) {
     const channel = client.channels.cache.get(channelId);
@@ -6,20 +7,15 @@ async function startRiotHandler(client, channelId) {
         console.error("Channel not found!");
         return;
     }
-    const puuid = await getPUUID('europe', 'user', 'tag');
-
-    let lastMatch = await getLastMatch(puuid, 'europe');
 
     async function refreshMatch() {
-        const last = await getLastMatch(puuid, 'europe');
-        if (lastMatch !== last) {
-            lastMatch = last;
-            const matchInfo = await getMatchInfo('europe', puuid, last);
-            let place = matchInfo.info.participants.find(p => p.puuid === puuid).placement;
-            if (place > 4)
-                channel.send(`User vient de finir ${place}eme loser`);
-            else
-                channel.send(`User vient de finir ${place}eme GG`);
+        const users = await get_all_users();
+        for (const user of users) {
+            const last_match = await getLastMatch(user.puuid, user.region);
+            if (last_match !== user.last_match) {
+                channel.send(`${user.username} just finished a game`);
+                await update_last_match(user.puuid, last_match);
+            }
         }
     }
 
