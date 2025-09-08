@@ -41,12 +41,9 @@ const User = sequelize.define(
 export async function init_database() {
     try {
         await sequelize.authenticate();
-        console.log("✅ Database connected");
-
         await sequelize.sync(); // use { force: true } if you want to drop & recreate
-        console.log("✅ Tables created/synced");
     } catch (err) {
-        console.error("❌ Database error:", err);
+        console.error("Database error:", err);
     }
 }
 

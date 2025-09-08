@@ -13,7 +13,13 @@ async function startRiotHandler(client, channelId) {
         for (const user of users) {
             const last_match = await getLastMatch(user.puuid, user.region);
             if (last_match !== user.last_match) {
-                channel.send(`${user.username} just finished a game`);
+                const game_info = await getMatchInfo(user.region, user.puuid, last_match);
+                const data = game_info.info.participants.find(p => p.puuid === user.puuid);
+                if (data.placement === 1)
+                    channel.send(`${user.username} vient de finir ${data.placement}er`);
+                else
+                    channel.send(`${user.username} vient de finir ${data.placement}ème`);
+
                 await update_last_match(user.puuid, last_match);
             }
         }
