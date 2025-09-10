@@ -16,7 +16,6 @@ const User = sequelize.define(
         },
         region: {
             type: DataTypes.TEXT,
-
             allowNull: false,
         },
         username: {
@@ -24,7 +23,7 @@ const User = sequelize.define(
             allowNull: false,
         },
         tag: {
-            type: DataTypes.STRING(3),
+            type: DataTypes.TEXT,
             allowNull: false,
         },
         last_match: {

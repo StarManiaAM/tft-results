@@ -15,12 +15,34 @@ async function startRiotHandler(client, channelId) {
             if (last_match !== user.last_match) {
                 const game_info = await getMatchInfo(user.region, user.puuid, last_match);
                 const data = game_info.info.participants.find(p => p.puuid === user.puuid);
-                if (data.placement === 1)
-                    channel.send(`${user.username} vient de finir ${data.placement}er trop cho `);
-                if (data.placement <= 4)
-                    channel.send(`${user.username} vient de finir ${data.placement}ème`);
+                let placement = data.placement;
+                let double = false;
+                if ('partner_group_id' in data) {
+                    double = true;
+                    if (placement % 2 !== 0)
+                        placement++;
+                    placement = placement / 2;
+                }
+                if (placement === 1) {
+                    if (double)
+                        channel.send(`${user.username} vient de finir ${placement}er en double up trop cho`);
+                    else
+                        channel.send(`${user.username} vient de finir ${placement}er trop cho`);
+                }
+
+                else if (placement <= 4 && !double)
+                    channel.send(`${user.username} vient de finir ${placement}ème`);
+
+                else if (placement <= 2 && double)
+                    channel.send(`${user.username} vient de finir ${placement}ème en double up`);
+
                 else
-                    channel.send(`${user.username} vient de finir ${data.placement}ème big loser`);
+                {
+                    if (!double)
+                        channel.send(`${user.username} vient de finir ${placement}ème big loser`);
+                    else
+                        channel.send(`${user.username} vient de finir ${placement}ème en double up big loser`);
+                }
 
                 await update_last_match(user.puuid, last_match);
             }
