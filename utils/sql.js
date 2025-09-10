@@ -70,7 +70,7 @@ export async function register_user(puuid, region, username, tag, lastMatch) {
             region: region,
             username: username,
             tag: tag,
-            lastMatch: lastMatch
+            last_match: lastMatch
         }
     );
 }
