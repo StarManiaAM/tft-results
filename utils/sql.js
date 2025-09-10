@@ -63,3 +63,23 @@ export async function update_last_match(puuid, last) {
         },
     );
 }
+
+export async function register_user(puuid, region, username, tag, lastMatch) {
+    await User.create(
+        {
+            puuid: puuid,
+            region: region,
+            username: username,
+            tag: tag,
+            lastMatch: lastMatch
+        }
+    );
+}
+
+export async function user_exists(puuid) {
+    const user = await User.findOne(
+        {
+        where: { puuid }
+    });
+    return user !== null;
+}
