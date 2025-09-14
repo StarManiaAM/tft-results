@@ -24,3 +24,37 @@ export async function getMatchInfo(region, puuid, match){
     );
     return res.data;
 }
+
+
+export async function getPlayerInfos(puuid, region){
+    const res = await axios.get(
+        `https://${region}.api.riotgames.com/tft/league/v1/by-puuid/${puuid}`,
+        { headers: { "X-Riot-Token": RIOT_API_KEY } }
+    );
+    return res.data;
+}
+
+export async function getRank(puuid, region) {
+    const res = await axios.get(
+        `https://${region}.api.riotgames.com/tft/league/v1/by-puuid/${puuid}`,
+        { headers: { "X-Riot-Token": RIOT_API_KEY } }
+    );
+    const data = res.data;
+    console.log(data);
+    const solo = data.find(d => d.queueType === "RANKED_TFT");
+    const doubleup = data.find(d => d.queueType === "RANKED_TFT_DOUBLE_UP");
+    console.log(solo);
+    console.log(doubleup);
+    return {
+        solo: solo ? {
+            tier: solo.tier,
+            division: solo.rank,
+            lp: solo.leaguePoints
+        } : null,
+        doubleup: doubleup ? {  
+            tier: doubleup.tier,
+            division: doubleup.rank,
+            lp: doubleup.leaguePoints
+        } : null
+    };
+}

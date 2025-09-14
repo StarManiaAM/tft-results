@@ -13,6 +13,8 @@ const client = new Client({
 client.commands = new Collection();
 import registerCommand from './commands/utility/register.js';
 client.commands.set(registerCommand.data.name, registerCommand);
+import leaderboardCommand from './commands/utility/leaderboard.js';
+client.commands.set(leaderboardCommand.data.name, leaderboardCommand);
 
 client.on(Events.InteractionCreate, async interaction => {
     if (!interaction.isChatInputCommand()) return;
