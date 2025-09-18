@@ -77,6 +77,7 @@ async function startRiotHandler(client, channelId) {
                         tdeltas = res.deltas;
                         // Sync teammate's last match
                         await update_last_match(teammateDb.puuid, last_match);
+                        users.splice(users.indexOf(users.find(p => p.puuid === teammateDb.puuid)), 1);
                     }
 
                     tlpChange =
