@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { register_user, user_exists } from '../../utils/sql.js'
-import { getLastMatch, getPUUID } from "../../utils/api.js";
+import { getLastMatch, getPUUID, getRank } from "../../utils/api.js";
 
 
 export default {
@@ -40,13 +40,16 @@ export default {
             }
             const lastMatch = await getLastMatch(puuid, region);
 
-            await register_user(puuid, region, username, tag, lastMatch);
+            const rankInfo = await getRank(puuid, "euw1"); //TODO: dynamic region
+
+            await register_user(puuid, region, username, tag, lastMatch, rankInfo);
 
             await interaction.reply(
                 `Registered user: **${username}#${tag}**.`
             );
         }
         catch (err) {
+            console.log(err);
             await interaction.reply(
                 `**${username}#${tag}** in ${region} not found.`
             );
