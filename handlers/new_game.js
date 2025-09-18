@@ -1,7 +1,6 @@
 import { getLastMatch, getMatchInfo, getRank } from '../utils/api.js'
 import { get_all_users, update_last_match, update_rank_with_delta, get_user } from '../utils/sql.js'
 
-
 async function startRiotHandler(client, channelId) {
     const channel = client.channels.cache.get(channelId);
     if (!channel) {
@@ -24,7 +23,8 @@ async function startRiotHandler(client, channelId) {
                 // --- Handle Double Up ---
                 if ('partner_group_id' in data) {
                     double = true;
-                    if (placement % 2 !== 0) placement++;
+                    if (placement % 2 !== 0)
+                        placement++;
                     placement = placement / 2;
     
                     const partnerId = data.partner_group_id;
@@ -33,7 +33,7 @@ async function startRiotHandler(client, channelId) {
                     );
     
                     // Get current user rank (Double Up)
-                    const rankInfo = await getRank(data.puuid, "euw1");
+                    const rankInfo = await getRank(data.puuid, "euw1"); //TODO: change region
                     const { newRank, deltas } = await update_rank_with_delta(user.puuid, rankInfo);
                     const current = newRank.doubleup;
                     const delta = deltas.doubleup;
@@ -42,7 +42,6 @@ async function startRiotHandler(client, channelId) {
                     // --- Teammate display ---
                     let teammateDisplay = "Unknown";
                     if (teammate) {
-                        console.log(teammate);
                         const teammateDb = await get_user(teammate.puuid);
                         if (teammateDb) {
                             // Update teammate rank
@@ -70,9 +69,10 @@ async function startRiotHandler(client, channelId) {
                     channel.send(
                         `${user.username} (${current.tier} ${current.division} ${current.lp} LP${lpChange}) & ${teammateDisplay} finished ${placement} in Double Up`
                     );
-                } else {
+                }
+                else {
                     // --- Solo Ranked ---
-                    const rankInfo = await getRank(data.puuid, "euw1");
+                    const rankInfo = await getRank(data.puuid, "euw1"); //TODO: change region
                     const { newRank, deltas } = await update_rank_with_delta(user.puuid, rankInfo);
                     const current = newRank.solo;
                     const delta = deltas.solo;

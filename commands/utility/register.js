@@ -40,7 +40,7 @@ export default {
             }
             const lastMatch = await getLastMatch(puuid, region);
 
-            const rankInfo = await getRank(puuid, "euw1");
+            const rankInfo = await getRank(puuid, "euw1"); //TODO: dynamic region
 
             await register_user(puuid, region, username, tag, lastMatch, rankInfo);
 

@@ -2,8 +2,8 @@ import { Sequelize, DataTypes } from "sequelize";
 import { rankToNumeric } from "./rank_num.js";
 
 const sequelize = new Sequelize({
-  dialect: "sqlite",
-  storage: "database/database.sqlite",
+  dialect: 'sqlite',
+  storage: 'database/database.sqlite',
 });
 
 const User = sequelize.define(
@@ -16,15 +16,15 @@ const User = sequelize.define(
       allowNull: false,
     },
     region: {
-      type: DataTypes.TEXT,
+      type: DataTypes.STRING,
       allowNull: false,
     },
     username: {
-      type: DataTypes.TEXT,
+      type: DataTypes.STRING,
       allowNull: false,
     },
     tag: {
-      type: DataTypes.TEXT,
+      type: DataTypes.STRING,
       allowNull: false,
     },
     last_match: {
@@ -43,7 +43,6 @@ const User = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
-
     doubleup_tier: {
       type: DataTypes.STRING,
       allowNull: true,
@@ -64,12 +63,12 @@ const User = sequelize.define(
 );
 
 export async function init_database() {
-  try {
-    await sequelize.authenticate();
-    await sequelize.sync(); // use { force: true } if you want to drop & recreate
-  } catch (err) {
-    console.error("Database error:", err);
-  }
+    try {
+        await sequelize.authenticate();
+        await sequelize.sync(); // use { force: true } if you want to drop & recreate
+    } catch (err) {
+        console.error("Database error:", err);
+    }
 }
 
 export async function get_all_users() {
@@ -95,14 +94,14 @@ export async function get_user(puuid) {
 }
 
 export async function update_last_match(puuid, last) {
-  await User.update(
-    { last_match: last },
-    {
-      where: {
-        puuid: puuid,
-      },
-    }
-  );
+    await User.update(
+        { last_match: last },
+        {
+            where: {
+                puuid: puuid,
+            },
+        }
+        );
 }
 
 export async function update_rank_with_delta(puuid, rankInfo) {
@@ -163,37 +162,30 @@ export async function update_rank_with_delta(puuid, rankInfo) {
   return { oldRank, newRank: rankInfo, deltas };
 }
 
-export async function register_user(
-  puuid,
-  region,
-  username,
-  tag,
-  lastMatch,
-  rankInfo
-) {
-  try {
-    await User.create({
-      puuid,
-      region,
-      username,
-      tag,
-      last_match: lastMatch,
-      rank_tier: rankInfo.solo?.tier || null,
-      rank_division: rankInfo.solo?.division || null,
-      rank_lp: rankInfo.solo?.lp,
-      doubleup_tier: rankInfo.doubleup?.tier || null,
-      doubleup_division: rankInfo.doubleup?.division || null,
-      doubleup_lp: rankInfo.doubleup?.lp,
-    });
-  } catch (err) {
-    console.error("Error registering user:", err);
-    throw err;
-  }
+export async function register_user(puuid, region, username, tag, lastMatch, rankInfo) {
+    try {
+        await User.create({
+            puuid,
+            region,
+            username,
+            tag,
+            last_match: lastMatch,
+            rank_tier: rankInfo.solo?.tier || null,
+            rank_division: rankInfo.solo?.division || null,
+            rank_lp: rankInfo.solo?.lp,
+            doubleup_tier: rankInfo.doubleup?.tier || null,
+            doubleup_division: rankInfo.doubleup?.division || null,
+            doubleup_lp: rankInfo.doubleup?.lp,
+        });
+    } catch (err) {
+        console.error("Error registering user:", err);
+        throw err;
+    }
 }
 
 export async function user_exists(puuid) {
-  const user = await User.findOne({
-    where: { puuid },
-  });
-  return user !== null;
+    const user = await User.findOne({
+        where: { puuid },
+    });
+    return user !== null;
 }
