@@ -51,15 +51,15 @@ async function startRiotHandler(client, channelId) {
                             const tdeltas = res.deltas;
                             let tlpChange = tdeltas.doubleup !== null ? (tdeltas.doubleup > 0 ? ` (+${tdeltas.doubleup} LP)` : ` (${tdeltas.doubleup} LP)`) : "";
    
-                            if (tnewRank) {
+                            if (tnewRank)
                                 teammateDisplay = `${teammateDb.username} (${tnewRank.doubleup.tier} ${tnewRank.doubleup.division} ${tnewRank.doubleup.lp} LP${tlpChange})`;
-                            } else {
+                            else
                                 teammateDisplay = teammateDb.username;
-                            }
     
                             // Sync teammate's last match
-                            await update_last_match(teammateDb.puuid, last_match);
-                        } else {
+                            users.splice(users.indexOf(users.find(p => p.puuid === teammateDb.puuid)), 1);
+                        }
+                        else {
                             teammateDisplay = teammate.riotIdGameName
                                 ? `${teammate.riotIdGameName}#${teammate.riotIdTagline}`
                                 : "Unknown";
