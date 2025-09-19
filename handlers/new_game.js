@@ -1,5 +1,7 @@
 import { getLastMatch, getMatchInfo, getRank } from '../utils/api.js'
 import { get_all_users, update_last_match, update_rank_with_delta, get_user } from '../utils/sql.js'
+import {User} from "discord.js";
+import {Model} from "sequelize";
 
 async function startRiotHandler(client, channelId) {
     const channel = client.channels.cache.get(channelId);
@@ -10,7 +12,7 @@ async function startRiotHandler(client, channelId) {
     
     async function refreshMatch() {
         const users = await get_all_users();
-    
+        let partners = [];
         for (const user of users) {
             const last_match = await getLastMatch(user.puuid, user.region);
             if (last_match !== user.last_match) {
@@ -42,6 +44,7 @@ async function startRiotHandler(client, channelId) {
                     // --- Teammate display ---
                     let teammateDisplay = "Unknown";
                     if (teammate) {
+                        partners.push(teammate.puuid);
                         const teammateDb = await get_user(teammate.puuid);
                         if (teammateDb) {
                             // Update teammate rank
@@ -55,9 +58,7 @@ async function startRiotHandler(client, channelId) {
                                 teammateDisplay = `${teammateDb.username} (${tnewRank.doubleup.tier} ${tnewRank.doubleup.division} ${tnewRank.doubleup.lp} LP${tlpChange})`;
                             else
                                 teammateDisplay = teammateDb.username;
-    
-                            // Sync teammate's last match
-                            users.splice(users.indexOf(users.find(p => p.puuid === teammateDb.puuid)), 1);
+
                         }
                         else {
                             teammateDisplay = teammate.riotIdGameName
@@ -65,10 +66,10 @@ async function startRiotHandler(client, channelId) {
                                 : "Unknown";
                         }
                     }
-    
-                    channel.send(
-                        `${user.username} (${current.tier} ${current.division} ${current.lp} LP${lpChange}) & ${teammateDisplay} finished ${placement} in Double Up`
-                    );
+                    if(!partners.includes(user.puuid))
+                        channel.send(
+                            `${user.username} (${current.tier} ${current.division} ${current.lp} LP${lpChange}) & ${teammateDisplay} finished ${placement} in Double Up`
+                        );
                 }
                 else {
                     // --- Solo Ranked ---
