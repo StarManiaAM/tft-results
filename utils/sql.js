@@ -111,7 +111,7 @@ export async function update_rank_with_delta(puuid, rankInfo) {
     solo: {
       tier: user.rank_tier,
       division: user.rank_division,
-      lp: user.lp,
+      lp: user.rank_lp,
     },
     doubleup: {
       tier: user.doubleup_tier,
@@ -124,7 +124,7 @@ export async function update_rank_with_delta(puuid, rankInfo) {
     {
       rank_tier: rankInfo.solo?.tier,
       rank_division: rankInfo.solo?.division,
-      lp: rankInfo.solo?.lp,
+      rank_lp: rankInfo.solo?.lp,
       doubleup_tier: rankInfo.doubleup?.tier,
       doubleup_division: rankInfo.doubleup?.division,
       doubleup_lp: rankInfo.doubleup?.lp,
