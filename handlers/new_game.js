@@ -1,10 +1,5 @@
 import { getLastMatch, getMatchInfo, getRank } from "../utils/api.js";
-import {
-    get_all_users,
-    update_last_match,
-    update_rank_with_delta,
-    get_user,
-} from "../utils/sql.js";
+import { get_all_users, update_last_match, update_rank_with_delta, get_user } from "../utils/sql.js";
 import { AttachmentBuilder } from "discord.js";
 import { generateMatchCard } from "../utils/card_generator.js";
 
@@ -53,6 +48,7 @@ async function startRiotHandler(client, channelId) {
                     );
                     const current = newRank.doubleup;
                     const delta = deltas.doubleup;
+
                     let lpChange =
                         delta !== null
                             ? delta > 0
