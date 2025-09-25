@@ -3,6 +3,7 @@ import { Client, GatewayIntentBits, Events, Collection } from 'discord.js';
 import { init_database } from "./utils/sql.js";
 import { startRiotHandler } from './handlers/new_game.js';
 
+
 // Create a new client instance
 const client = new Client({
     intents: [
