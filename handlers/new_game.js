@@ -17,7 +17,7 @@ async function startRiotHandler(client, channelId) {
 
     async function refreshMatch() {
         const users = await get_all_users();
-
+        let partners = [];
         for (const user of users) {
             const last_match = await getLastMatch(user.puuid, user.region);
             if (last_match !== user.last_match) {
@@ -66,6 +66,7 @@ async function startRiotHandler(client, channelId) {
                     let tdeltas = "";
 
                     const teammateDb = await get_user(teammate.puuid);
+                    partners.push(teammate.puuid);
                     const tRankInfo = await getRank(teammate.puuid, "euw1");
                     if (teammateDb) {
                         // Update teammate rank
@@ -109,9 +110,11 @@ async function startRiotHandler(client, channelId) {
                     });
 
                     // envoyer dans le channel
-                    await channel.send({
-                        files: [attachment],
-                    });
+                    if (!partners.includes(user.puuid)) {
+                        await channel.send({
+                            files: [attachment],
+                        });
+                    }
                 } else {
                     // --- Solo Ranked ---
                     const rankInfo = await getRank(data.puuid, "euw1");
