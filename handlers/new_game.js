@@ -35,8 +35,7 @@ async function startRiotHandler(client, channelId) {
                 // --- Handle Double Up ---
                 if ("partner_group_id" in data) {
                     double = true;
-                    if (placement % 2 !== 0)
-                        placement++;
+                    if (placement % 2 !== 0) placement++;
                     placement = placement / 2;
 
                     const partnerId = data.partner_group_id;
@@ -77,7 +76,6 @@ async function startRiotHandler(client, channelId) {
                         tdeltas = res.deltas;
                         // Sync teammate's last match
                         await update_last_match(teammateDb.puuid, last_match);
-                        users.splice(users.indexOf(users.find(p => p.puuid === teammateDb.puuid)), 1);
                     }
 
                     tlpChange =
