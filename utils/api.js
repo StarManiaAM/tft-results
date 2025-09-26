@@ -17,6 +17,14 @@ export async function getLastMatch(puuid, region) {
     return res.data[0];
 }
 
+export async function getMatchHistory(puuid, region, size) {
+    const res = await axios.get(
+        `https://${region}.api.riotgames.com/tft/match/v1/matches/by-puuid/${puuid}/ids?start=0&count=${size}`,
+        { headers: { "X-Riot-Token": RIOT_API_KEY } }
+    );
+    return res.data;
+}
+
 export async function getMatchInfo(region, puuid, match){
     const res = await axios.get(
         `https://${region}.api.riotgames.com/tft/match/v1/matches/${match}`,
