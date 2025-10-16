@@ -164,7 +164,7 @@ async function startRiotHandler(client, channelId) {
         }
     }
 
-    setInterval(await refreshMatch, 15000);
+    setInterval(refreshMatch, 15000);
 }
 
 export { startRiotHandler };
