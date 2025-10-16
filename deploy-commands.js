@@ -7,6 +7,10 @@ const guildId=process.env.GUILD_ID;
 const token=process.env.DISCORD_CLIENT_TOKEN;
 const clientId=process.env.CLIENT_ID;
 
+if (!token || !clientId) {
+    throw new Error("Discord Token and Client ID must be specified in .env !");
+}
+
 const commands = [];
 // Path of the folder containing the command files
 const foldersPath = 'commands';

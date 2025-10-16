@@ -38,14 +38,14 @@ export async function generateMatchCard(
     ctx.fillText(teammate ? "Double Up Match" : "Solo Match", 30, 40);
 
     // --- Infos joueur principal ---
-    drawPlayerHeader(ctx, user, rank, lpChange, placement, 80);
+    await drawPlayerHeader(ctx, user, rank, lpChange, placement, 80);
 
     // --- Champs du joueur principal ---
     await drawComp(ctx, data.units, champSize, padding, cols, 180);
 
     if (teammate) {
         // --- Infos teammate ---
-        drawPlayerHeader(
+        await drawPlayerHeader(
             ctx,
             teammate,
             teammate.rank,
@@ -69,7 +69,7 @@ export async function generateMatchCard(
 }
 
 
-function drawPlayerHeader(ctx, user, rank, lpChange, placement, offsetY) {
+async function drawPlayerHeader(ctx, user, rank, lpChange, placement, offsetY) {
     ctx.fillStyle = "white";
     ctx.font = "24px Arial";
     ctx.textAlign = "left";
@@ -92,9 +92,12 @@ function drawPlayerHeader(ctx, user, rank, lpChange, placement, offsetY) {
     let r_caps = rank.tier.toLowerCase();
     r_caps = r_caps.charAt(0).toUpperCase() + r_caps.slice(1);
     const rankIconUrl = `https://c-tft-api.op.gg/img/set/15/tft-regalia/TFT_Regalia_${r_caps}.png`;
-    loadImage(rankIconUrl)
-        .then((icon) => ctx.drawImage(icon, 30, offsetY - 40, 90, 90))
-        .catch(() => console.warn("Rank icon not found:", rankIconUrl));
+    try {
+        const icon = await loadImage(rankIconUrl);
+        ctx.drawImage(icon, 30, offsetY - 40, 90, 90);
+    } catch (err) {
+        console.warn("Rank icon not found or could not load:", rankIconUrl);
+    }
 }
 
 async function drawComp(ctx, units, champSize, padding, cols, offsetY) {

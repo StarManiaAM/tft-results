@@ -14,11 +14,15 @@ async function startRiotHandler(client, channelId) {
         const users = await get_all_users();
         let partners = [];
         for (const user of users) {
-            const last_match = await getLastMatch(user.puuid, user.region);
+            try {
+                const last_match = await getLastMatch(user.puuid, user.region);
+
+                if (!last_match) {
+                    continue;
+                }
             if (last_match !== user.last_match) {
                 const game_info = await getMatchInfo(
                     user.region,
-                    user.puuid,
                     last_match
                 );
                 const data = game_info.info.participants.find(
@@ -153,10 +157,14 @@ async function startRiotHandler(client, channelId) {
 
                 await update_last_match(user.puuid, last_match);
             }
+        } catch (error) {
+            console.error(`Failed to process matches for user ${user.username} (${user.puuid}). Skipping.`, error);
+            // On continue la boucle pour ne pas bloquer les autres utilisateurs
+        }
         }
     }
 
-    setInterval(await refreshMatch, 15000);
+    setInterval(refreshMatch, 15000);
 }
 
 export { startRiotHandler };

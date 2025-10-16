@@ -1,5 +1,7 @@
 import 'dotenv/config';
-import { Client, GatewayIntentBits, Events, Collection } from 'discord.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { Client, GatewayIntentBits, Events, Collection, MessageFlags } from 'discord.js';
 import { init_database } from "./utils/sql.js";
 import { startRiotHandler } from './handlers/new_game.js';
 
@@ -12,10 +14,22 @@ const client = new Client({
     ] });
 
 client.commands = new Collection();
-import registerCommand from './commands/utility/register.js';
-client.commands.set(registerCommand.data.name, registerCommand);
-import leaderboardCommand from './commands/utility/leaderboard.js';
-client.commands.set(leaderboardCommand.data.name, leaderboardCommand);
+const foldersPath = 'commands';
+const commandFolders = fs.readdirSync(foldersPath);
+
+for (const folder of commandFolders) {
+    const commandsPath = path.join(foldersPath, folder);
+    const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+    for (const file of commandFiles) {
+        const filePath = path.join(commandsPath, file);
+        const command = (await import(`./${filePath}`)).default;
+        if ('data' in command && 'execute' in command) {
+            client.commands.set(command.data.name, command);
+        } else {
+            console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
+        }
+    }
+}
 
 client.on(Events.InteractionCreate, async interaction => {
     if (!interaction.isChatInputCommand()) return;
