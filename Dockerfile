@@ -11,12 +11,15 @@ RUN apk add --no-cache \
     cairo-dev \
     jpeg-dev \
     pango-dev \
-    giflib-dev
+    giflib-dev \
+    fontconfig \
+    ttf-dejavu \
+    ttf-freefont
 
 ENV NODE_ENV=production
 WORKDIR /usr/src/app
 COPY --chown=node:node . /usr/src/app
 RUN npm ci --omit=dev
-RUN mkdir -p database && chown -R node:node /usr/src/app
+RUN mkdir -p database && chown -R node:node /usr/src/app/database
 USER node
 CMD ["dumb-init", "node", "/usr/src/app/index.js"]
