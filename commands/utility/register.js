@@ -32,6 +32,10 @@ export default {
         const region = interaction.options.getString('region');
         try {
             const puuid = await getPUUID(region, username, tag);
+            if (!puuid) {
+                await interaction.reply(`Could not find player **${username}#${tag}**.`);
+                return;
+            }
             if (await user_exists(puuid)) {
                 await interaction.reply(
                     `**${username}#${tag}** is already tracked !`
