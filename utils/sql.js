@@ -132,27 +132,28 @@ export async function update_rank_with_delta(puuid, rankInfo) {
     { where: { puuid } }
   );
 
-  const oldPoints_s = rankToNumeric(
-    oldRank.solo.tier,
-    oldRank.solo.division,
-    oldRank.solo.lp
-  );
-  const newPoints_s = rankToNumeric(
-    rankInfo.solo.tier,
-    rankInfo.solo.division,
-    rankInfo.solo.lp
-  );
+    const oldPoints_s = rankToNumeric(
+        oldRank.solo?.tier,
+        oldRank.solo?.division,
+        oldRank.solo?.lp
+    ) || 0;
+    const newPoints_s = rankToNumeric(
+        rankInfo.solo?.tier,
+        rankInfo.solo?.division,
+        rankInfo.solo?.lp
+    ) || 0;
+
 
   const oldPoints_d = rankToNumeric(
     oldRank.doubleup.tier,
     oldRank.doubleup.division,
     oldRank.doubleup.lp
-  );
+  ) || 0;
   const newPoints_d = rankToNumeric(
     rankInfo.doubleup.tier,
     rankInfo.doubleup.division,
     rankInfo.doubleup.lp
-  );
+  ) || 0;
 
   const deltas = {
     solo: newPoints_s - oldPoints_s,
