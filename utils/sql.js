@@ -1,5 +1,5 @@
-import { Sequelize, DataTypes } from "sequelize";
-import { rankToNumeric } from "./rank_num.js";
+import {DataTypes, Sequelize} from "sequelize";
+import {rankToNumeric} from "./rank_num.js";
 import logger from "./logger.js";
 
 const sequelize = new Sequelize({
@@ -7,119 +7,120 @@ const sequelize = new Sequelize({
     storage: 'database/database.sqlite',
     logging: (msg) => logger.debug(`[Sequelize] ${msg}`),
     pool: {
-    max: 5,
+        max: 5,
         min: 0,
         acquire: 30000,
         idle: 10000
-},
-retry: {
-    max: 3,
+    },
+    retry: {
+        max: 3,
         match: [
-        /SQLITE_BUSY/,
-    ]
-}
+            /SQLITE_BUSY/,
+        ]
+    }
 });
 
 const User = sequelize.define(
-  "User",
-  {
-    puuid: {
-      type: DataTypes.STRING(78),
-      primaryKey: true,
-      unique: true,
-      allowNull: false,
-        validate: {
-            notEmpty: true,
-            len: 78
-        }
+    "User",
+    {
+        puuid: {
+            type: DataTypes.STRING(78),
+            primaryKey: true,
+            unique: true,
+            allowNull: false,
+            validate: {
+                notEmpty: true,
+                len: 78
+            }
+        },
+        region: {
+            type: DataTypes.STRING(10),
+            allowNull: false,
+            validate: {
+                notEmpty: true,
+                isIn: [['americas', 'europe', 'asia', 'sea']]
+            }
+        },
+        plateform: {
+            type: DataTypes.STRING(4),
+            allowNull: false,
+            validate: {
+                notEmpty: true,
+                isIn: [['na1',
+                    'br1',
+                    'la1',
+                    'la2',
+                    'oc1',
+                    'euw1',
+                    'eun1',
+                    'tr1',
+                    'ru',
+                    'kr',
+                    'jp1',
+                    'ph2',
+                    'sg2',
+                    'th2',
+                    'tw2',
+                    'vn2']]
+            }
+        },
+        username: {
+            type: DataTypes.STRING(100),
+            allowNull: false,
+            validate: {
+                notEmpty: true,
+                len: [1, 100]
+            }
+        },
+        tag: {
+            type: DataTypes.STRING(20),
+            allowNull: false,
+            validate: {
+                notEmpty: true,
+                len: [1, 20]
+            }
+        },
+        last_match: {
+            type: DataTypes.STRING(15),
+            allowNull: true,
+        },
+        rank_tier: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        rank_division: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        rank_lp: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            defaultValue: 0,
+            validate: {
+                min: 0
+            }
+        },
+        doubleup_tier: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        doubleup_division: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        doubleup_lp: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            defaultValue: 0,
+            validate: {
+                min: 0
+            }
+        },
     },
-    region: {
-      type: DataTypes.STRING(10),
-      allowNull: false,
-        validate: {
-            notEmpty: true,
-            isIn: [['americas', 'europe', 'asia', 'sea']]
-        }
-    },
-      plateform: {
-        type: DataTypes.STRING(4),
-          allowNull: false,
-          validate: {
-              notEmpty: true,
-              isIn: [['na1',
-'br1',
-'la1',
-'la2' ,
- 'oc1' ,
-'euw1' ,
- 'eun1',
-'tr1' ,
-'ru' ,
- 'kr' ,
- 'jp1' ,
- 'ph2' ,
-'sg2' ,
- 'th2' ,
-'tw2' ,'vn2']]
-          }
-      },
-    username: {
-      type: DataTypes.STRING(100),
-      allowNull: false,
-        validate: {
-            notEmpty: true,
-            len: [1, 100]
-        }
-    },
-    tag: {
-      type: DataTypes.STRING(20),
-      allowNull: false,
-        validate: {
-            notEmpty: true,
-            len: [1, 20]
-        }
-    },
-    last_match: {
-      type: DataTypes.STRING(15),
-      allowNull: true,
-    },
-    rank_tier: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    rank_division: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    rank_lp: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-        defaultValue: 0,
-        validate: {
-            min: 0
-        }
-    },
-    doubleup_tier: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    doubleup_division: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    doubleup_lp: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-        defaultValue: 0,
-        validate: {
-            min: 0
-        }
-    },
-  },
-  {
-    tableName: "users",
-    timestamps: true,
-  }
+    {
+        tableName: "users",
+        timestamps: true,
+    }
 );
 
 let isConnected = false;
@@ -132,7 +133,7 @@ export async function init_database() {
             await sequelize.authenticate();
             logger.info("Database connection established successfully");
 
-            await sequelize.sync({ alter: false }); // Use migrations in production
+            await sequelize.sync({alter: false}); // Use migrations in production
             logger.info("Database synchronized");
 
             isConnected = true;
@@ -162,10 +163,10 @@ export async function init_database() {
 export async function checkDatabaseHealth() {
     try {
         await sequelize.authenticate();
-        return { healthy: true, message: "Database connection OK" };
+        return {healthy: true, message: "Database connection OK"};
     } catch (err) {
-        logger.error("Database health check failed", { error: err.message });
-        return { healthy: false, message: err.message };
+        logger.error("Database health check failed", {error: err.message});
+        return {healthy: false, message: err.message};
     }
 }
 
@@ -190,12 +191,14 @@ export async function get_all_users() {
         });
 
         logger.debug(`Retrieved ${users.length} users from database`);
+
         return users;
     } catch (err) {
         logger.error("Failed to retrieve users", {
             error: err.message,
             stack: err.stack
         });
+
         throw err;
     }
 }
@@ -208,7 +211,7 @@ export async function get_user(puuid) {
 
     try {
         const user = await User.findOne({
-            where: { puuid },
+            where: {puuid},
             raw: true
         });
 
@@ -222,6 +225,7 @@ export async function get_user(puuid) {
             error: err.message,
             stack: err.stack
         });
+
         throw err;
     }
 }
@@ -232,13 +236,14 @@ export async function update_last_match(puuid, last) {
             puuid: !!puuid,
             last: !!last
         });
+
         return false;
     }
 
     try {
         const [affectedRows] = await User.update(
-            { last_match: last },
-            { where: { puuid } }
+            {last_match: last},
+            {where: {puuid}}
         );
 
         if (affectedRows === 0) {
@@ -247,12 +252,14 @@ export async function update_last_match(puuid, last) {
         }
 
         logger.debug(`Updated last_match for ${puuid.substring(0, 8)}... to ${last}`);
+
         return true;
     } catch (err) {
         logger.error(`Failed to update last_match for ${puuid.substring(0, 8)}...`, {
             error: err.message,
             matchId: last
         });
+
         throw err;
     }
 }
@@ -272,7 +279,7 @@ export async function update_rank_with_delta(puuid, rankInfo) {
 
     try {
         const user = await User.findOne({
-            where: { puuid },
+            where: {puuid},
             transaction,
             lock: transaction.LOCK.UPDATE
         });
@@ -327,7 +334,7 @@ export async function update_rank_with_delta(puuid, rankInfo) {
                 doubleup_lp: rankInfo.doubleup?.lp || 0,
             },
             {
-                where: { puuid },
+                where: {puuid},
                 transaction
             }
         );
@@ -339,13 +346,14 @@ export async function update_rank_with_delta(puuid, rankInfo) {
             doubleupChange: deltas.doubleup !== null ? `${deltas.doubleup > 0 ? '+' : ''}${deltas.doubleup} LP` : 'N/A'
         });
 
-        return { oldRank, newRank: rankInfo, deltas };
+        return {oldRank, newRank: rankInfo, deltas};
     } catch (err) {
         await transaction.rollback();
         logger.error(`Failed to update rank for ${puuid.substring(0, 8)}...`, {
             error: err.message,
             stack: err.stack
         });
+
         throw err;
     }
 }
@@ -359,6 +367,7 @@ export async function register_user(puuid, region, plateform, username, tag, las
             username: !!username,
             tag: !!tag
         });
+
         throw new Error("Missing required parameters for user registration");
     }
     try {
@@ -384,6 +393,7 @@ export async function register_user(puuid, region, plateform, username, tag, las
             soloRank: rankInfo?.solo ? `${rankInfo.solo.tier} ${rankInfo.solo.division} ${rankInfo.solo.lp}LP` : 'Unranked',
             doubleupRank: rankInfo?.doubleup ? `${rankInfo.doubleup.tier} ${rankInfo.doubleup.division} ${rankInfo.doubleup.lp}LP` : 'Unranked'
         });
+
         return user;
     } catch (err) {
         if (err.name === 'SequelizeUniqueConstraintError') {
@@ -394,8 +404,9 @@ export async function register_user(puuid, region, plateform, username, tag, las
         if (err.name === 'SequelizeValidationError') {
             logger.error("Validation error during user registration", {
                 username: `${username}#${tag}`,
-                errors: err.errors.map(e => ({ field: e.path, message: e.message }))
+                errors: err.errors.map(e => ({field: e.path, message: e.message}))
             });
+
             throw new Error(`Invalid user data: ${err.errors[0].message}`);
         }
 
@@ -403,6 +414,7 @@ export async function register_user(puuid, region, plateform, username, tag, las
             error: err.message,
             stack: err.stack
         });
+
         throw err;
     }
 }
@@ -414,12 +426,13 @@ export async function user_exists(puuid) {
     }
 
     try {
-        const count = await User.count({ where: { puuid } });
+        const count = await User.count({where: {puuid}});
         return count > 0;
     } catch (err) {
         logger.error(`Failed to check user existence for ${puuid.substring(0, 8)}...`, {
             error: err.message
         });
+
         throw err;
     }
 }
@@ -431,7 +444,7 @@ export async function delete_user(puuid) {
     }
 
     try {
-        const deleted = await User.destroy({ where: { puuid } });
+        const deleted = await User.destroy({where: {puuid}});
 
         if (deleted > 0) {
             logger.info(`Deleted user: ${puuid.substring(0, 8)}...`);
@@ -444,6 +457,7 @@ export async function delete_user(puuid) {
         logger.error(`Failed to delete user ${puuid.substring(0, 8)}...`, {
             error: err.message
         });
+
         throw err;
     }
 }
@@ -457,6 +471,7 @@ export async function close_database() {
         logger.error("Error closing database connection", {
             error: err.message
         });
+
         throw err;
     }
 }

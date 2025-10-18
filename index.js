@@ -2,10 +2,10 @@ import "./utils/config.js";
 import logger from "./utils/logger.js";
 import fs from 'node:fs';
 import path from 'node:path';
-import { Client, GatewayIntentBits, Events, Collection, MessageFlags } from 'discord.js';
-import { init_database, close_database, checkDatabaseHealth } from "./utils/sql.js";
-import { startRiotHandler } from './handlers/new_game.js';
-import { config } from "./utils/config.js";
+import {Client, Collection, Events, GatewayIntentBits, MessageFlags} from 'discord.js';
+import {checkDatabaseHealth, close_database, init_database} from "./utils/sql.js";
+import {startRiotHandler} from './handlers/new_game.js';
+import {config} from "./utils/config.js";
 
 logger.logStartup();
 
@@ -14,7 +14,8 @@ const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages
-    ] });
+    ]
+});
 
 client.commands = new Collection();
 
@@ -23,19 +24,23 @@ let isShuttingDown = false;
 
 async function loadCommands() {
     const foldersPath = path.resolve(process.cwd(), "commands");
+
     if (!fs.existsSync(foldersPath)) {
         logger.warn("Commands folder not found: " + foldersPath);
         return;
     }
-    const commandFolders = fs.readdirSync(foldersPath, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name);
+
+    const commandFolders = fs.readdirSync(foldersPath, {withFileTypes: true}).filter(d => d.isDirectory()).map(d => d.name);
     let loadedCount = 0;
     let failedCount = 0;
 
     for (const folder of commandFolders) {
         const commandsPath = path.join(foldersPath, folder);
         const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith(".js"));
+
         for (const file of commandFiles) {
             const filePath = path.join(commandsPath, file);
+
             try {
                 const relativePath = path.relative(process.cwd(), filePath).replaceAll("\\", "/");
                 const imported = await import(`./${relativePath}`);
@@ -95,10 +100,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
             stack: err.stack,
             user: interaction.user.tag
         });
+
         const errorMessage = {
             content: "There was an error while executing this command. The issue has been logged.",
             flags: MessageFlags.Ephemeral
         };
+
         try {
             if (interaction.replied || interaction.deferred) {
                 await interaction.followUp(errorMessage);
@@ -120,9 +127,11 @@ client.once(Events.ClientReady, async (readyClient) => {
         userId: readyClient.user.id,
         guildCount: readyClient.guilds.cache.size
     });
+
     try {
         logger.info("Initializing database...");
         await init_database();
+
         const dbHealth = await checkDatabaseHealth();
         if (!dbHealth.healthy) {
             throw new Error(`Database unhealthy: ${dbHealth.message}`);
@@ -134,7 +143,7 @@ client.once(Events.ClientReady, async (readyClient) => {
         logger.info("Riot match handler started successfully");
 
         readyClient.user.setPresence({
-            activities: [{ name: 'TFT matches', type: 3 }], // Type 3 = Watching
+            activities: [{name: 'TFT matches', type: 3}], // Type 3 = Watching
             status: 'online'
         });
 
@@ -159,7 +168,7 @@ client.on(Events.Error, (error) => {
 
 // Handle warnings
 client.on(Events.Warn, (warning) => {
-    logger.warn("Discord client warning", { warning });
+    logger.warn("Discord client warning", {warning});
 });
 
 // Handle disconnections
@@ -173,7 +182,7 @@ client.on(Events.ShardDisconnect, (event, shardId) => {
 
 // Handle reconnections
 client.on(Events.ShardReconnecting, (shardId) => {
-    logger.info("Shard reconnecting", { shardId });
+    logger.info("Shard reconnecting", {shardId});
 });
 
 // Handle rate limits (for monitoring)
@@ -188,7 +197,7 @@ client.on(Events.RateLimited, (rateLimitData) => {
 });
 
 // Global error handlers
-process.on("unhandledRejection", (reason, promise) => {
+process.on("unhandledRejection", (reason) => {
     logger.error("Unhandled Promise Rejection", {
         reason: reason instanceof Error ? reason.message : reason,
         stack: reason instanceof Error ? reason.stack : undefined

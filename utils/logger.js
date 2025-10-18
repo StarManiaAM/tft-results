@@ -1,17 +1,17 @@
-import { createLogger, format, transports } from "winston";
+import {createLogger, format, transports} from "winston";
 import path from "node:path";
 import fs from "node:fs";
 
-const { combine, timestamp, printf, colorize, errors, json } = format;
+const {combine, timestamp, printf, colorize, errors, json} = format;
 
 // Ensure logs directory exists
 const logsDir = path.join(process.cwd(), 'logs');
 if (!fs.existsSync(logsDir)) {
-    fs.mkdirSync(logsDir, { recursive: true });
+    fs.mkdirSync(logsDir, {recursive: true});
 }
 
 // Custom format for console (human-readable)
-const consoleFormat = printf(({ level, message, timestamp, stack, ...metadata }) => {
+const consoleFormat = printf(({level, message, timestamp, stack, ...metadata}) => {
     let msg = `${timestamp} ${level}: ${stack || message}`;
 
     // Add metadata if present (excluding empty objects)
@@ -56,8 +56,8 @@ const sanitize = format((info) => {
 const logger = createLogger({
     level: process.env.LOG_LEVEL || "info",
     format: combine(
-        errors({ stack: true }),
-        timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        errors({stack: true}),
+        timestamp({format: 'YYYY-MM-DD HH:mm:ss'}),
         sanitize()
     ),
     transports: [
@@ -92,7 +92,7 @@ const logger = createLogger({
         new transports.File({
             filename: path.join(logsDir, 'combined.log'),
             format: combine(
-                timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+                timestamp({format: 'YYYY-MM-DD HH:mm:ss'}),
                 consoleFormat
             ),
             maxsize: 10485760, // 10MB

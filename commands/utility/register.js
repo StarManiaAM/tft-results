@@ -1,6 +1,6 @@
-import { SlashCommandBuilder } from 'discord.js';
-import { register_user, user_exists } from '../../utils/sql.js'
-import { getLastMatch, getPUUID, getRank } from "../../utils/api.js";
+import {SlashCommandBuilder} from 'discord.js';
+import {register_user, user_exists} from '../../utils/sql.js'
+import {getLastMatch, getPUUID, getRank} from "../../utils/api.js";
 import logger from "../../utils/logger.js";
 
 function getRegionFromPlatform(platform) {
@@ -52,25 +52,25 @@ export default {
                 .setRequired(true)
                 .addChoices(
                     // Americas
-                    { name: 'NA1 (North America)', value: 'na1' },
-                    { name: 'BR1 (Brazil)', value: 'br1' },
-                    { name: 'LA1 (LATAM North)', value: 'la1' },
-                    { name: 'LA2 (LATAM South)', value: 'la2' },
-                    { name: 'OC1 (Oceania)', value: 'oc1' },
+                    {name: 'NA1 (North America)', value: 'na1'},
+                    {name: 'BR1 (Brazil)', value: 'br1'},
+                    {name: 'LA1 (LATAM North)', value: 'la1'},
+                    {name: 'LA2 (LATAM South)', value: 'la2'},
+                    {name: 'OC1 (Oceania)', value: 'oc1'},
                     // Europe
-                    { name: 'EUW1 (EU West)', value: 'euw1' },
-                    { name: 'EUN1 (EU Nordic & East)', value: 'eun1' },
-                    { name: 'TR1 (Turkey)', value: 'tr1' },
-                    { name: 'RU (Russia)', value: 'ru' },
+                    {name: 'EUW1 (EU West)', value: 'euw1'},
+                    {name: 'EUN1 (EU Nordic & East)', value: 'eun1'},
+                    {name: 'TR1 (Turkey)', value: 'tr1'},
+                    {name: 'RU (Russia)', value: 'ru'},
                     // Asia
-                    { name: 'KR (Korea)', value: 'kr' },
-                    { name: 'JP1 (Japan)', value: 'jp1' },
+                    {name: 'KR (Korea)', value: 'kr'},
+                    {name: 'JP1 (Japan)', value: 'jp1'},
                     // SEA (Southeast Asia)
-                    { name: 'PH2 (Philippines)', value: 'ph2' },
-                    { name: 'SG2 (Singapore)', value: 'sg2' },
-                    { name: 'TH2 (Thailand)', value: 'th2' },
-                    { name: 'TW2 (Taiwan)', value: 'tw2' },
-                    { name: 'VN2 (Vietnam)', value: 'vn2' }
+                    {name: 'PH2 (Philippines)', value: 'ph2'},
+                    {name: 'SG2 (Singapore)', value: 'sg2'},
+                    {name: 'TH2 (Thailand)', value: 'th2'},
+                    {name: 'TW2 (Taiwan)', value: 'tw2'},
+                    {name: 'VN2 (Vietnam)', value: 'vn2'}
                 )),
 
     async execute(interaction) {
@@ -95,8 +95,9 @@ export default {
             tag = tag.slice(1);
 
         const region = getRegionFromPlatform(platform);
+
         if (!region) {
-            logger.error("Invalid platform provided", { platform });
+            logger.error("Invalid platform provided", {platform});
             await interaction.editReply("❌ Invalid platform selected.");
             return;
         }
@@ -116,12 +117,14 @@ export default {
                     region,
                     platform
                 });
+
                 await interaction.editReply(
                     `❌ Could not find player **${username}#${tag}** in region **${region}**.\n` +
                     `Please verify:\n` +
                     `• Username and tag are correct\n` +
                     `• Platform matches your account region`
                 );
+
                 return;
             }
 
@@ -129,13 +132,16 @@ export default {
                 logger.info(`Registration rejected - user already exists: ${username}#${tag}`, {
                     puuid: puuid.substring(0, 8) + '...'
                 });
+
                 await interaction.editReply(
                     `ℹ️ **${username}#${tag}** is already being tracked!`
                 );
+
                 return;
             }
 
             const lastMatch = await getLastMatch(puuid, region);
+
             if (!lastMatch) {
                 logger.warn(`No match history found for ${username}#${tag}`, {
                     puuid: puuid.substring(0, 8) + '...'
@@ -173,8 +179,8 @@ export default {
             message += `\n🎮 Your matches will now be tracked automatically!`;
 
             await interaction.editReply(message);
-        }
-        catch (err) {
+
+        } catch (err) {
             logger.error(`Registration failed for ${username}#${tag}`, {
                 error: err.message,
                 stack: err.stack,

@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
-dotenv.config();
 import logger from "./logger.js";
+
+dotenv.config();
 
 const required = [
     "DISCORD_CLIENT_TOKEN",

@@ -1,9 +1,9 @@
 import logger from "../utils/logger.js";
-import { getLastMatch, getMatchInfo, getRank } from "../utils/api.js";
-import { get_all_users, update_last_match, update_rank_with_delta, get_user } from "../utils/sql.js";
-import { AttachmentBuilder } from "discord.js";
-import { generateMatchCard } from "../utils/card_generator.js";
-import { config } from "../utils/config.js";
+import {getLastMatch, getMatchInfo, getRank} from "../utils/api.js";
+import {get_all_users, get_user, update_last_match, update_rank_with_delta} from "../utils/sql.js";
+import {AttachmentBuilder} from "discord.js";
+import {generateMatchCard} from "../utils/card_generator.js";
+import {config} from "../utils/config.js";
 
 let stopLoop = false;
 let isShuttingDown = false;
@@ -23,6 +23,7 @@ function cleanupMatchCache() {
 
 async function startRiotHandler(client, channelId) {
     const channel = client.channels.cache.get(channelId);
+
     if (!channel) {
         logger.error("Channel not found for ID: " + channelId);
         throw new Error(`Invalid channel ID: ${channelId}`);
@@ -84,6 +85,7 @@ async function startRiotHandler(client, channelId) {
                     }
                 } catch (userErr) {
                     errorCount++;
+
                     logger.error(`Failed to process matches for user ${user.username}#${user.tag} (${user.puuid})`, {
                         error: userErr.message,
                         stack: userErr.stack,
@@ -119,6 +121,7 @@ async function startRiotHandler(client, channelId) {
         } catch (err) {
             failureCount++;
             consecutiveErrors++;
+
             logger.error("Critical error in refreshMatch loop", {
                 error: err.message,
                 stack: err.stack,
@@ -138,6 +141,7 @@ async function startRiotHandler(client, channelId) {
                     logger.error("Failed to send health alert to channel", sendErr);
                 }
             }
+
         } finally {
             running = false;
         }
@@ -198,6 +202,8 @@ async function startRiotHandler(client, channelId) {
             await processDoubleUpMatch(user, data, game_info, last_match, channel, processedPartners);
         } else if (queueId === 1100) {
             await processSoloMatch(user, data, last_match, channel);
+        } else {
+            await processOtherMatch(user, data, last_match, channel);
         }
 
 
@@ -209,15 +215,15 @@ async function startRiotHandler(client, channelId) {
 
     async function processSoloMatch(user, data, last_match, channel) {
         try {
-            const platform = user.plateform || getPlatformFromRegion(user.region);
+            const platform = user.plateform;
             const rankInfo = await getRank(data.puuid, platform);
 
             if (!rankInfo) {
                 throw new Error("Failed to retrieve rank information");
             }
 
-            const { newRank, deltas } = await update_rank_with_delta(user.puuid, rankInfo);
-            const current = newRank.solo || { tier: "UNRANKED", division: "", lp: 0 };
+            const {newRank, deltas} = await update_rank_with_delta(user.puuid, rankInfo);
+            const current = newRank.solo || {tier: "UNRANKED", division: "", lp: 0};
             const delta = deltas.solo;
             const lpChange = formatLPChange(delta);
 
@@ -237,8 +243,10 @@ async function startRiotHandler(client, channelId) {
                 "solo"
             );
 
-            const attachment = new AttachmentBuilder(soloCard, { name: "solo.png" });
-            await channel.send({ files: [attachment] });
+            const attachment = new AttachmentBuilder(soloCard, {name: "solo.png"});
+
+            await channel.send({files: [attachment]});
+
             await update_last_match(user.puuid, last_match);
 
         } catch (err) {
@@ -247,6 +255,7 @@ async function startRiotHandler(client, channelId) {
                 stack: err.stack,
                 matchId: last_match
             });
+
             throw err;
         }
     }
@@ -255,6 +264,7 @@ async function startRiotHandler(client, channelId) {
         try {
             // Calculate double-up placement
             let placement = data.placement;
+
             if (placement % 2 !== 0) placement++;
             placement = placement / 2;
 
@@ -278,8 +288,8 @@ async function startRiotHandler(client, channelId) {
                 throw new Error("Failed to retrieve rank information");
             }
 
-            const { newRank, deltas } = await update_rank_with_delta(user.puuid, rankInfo);
-            const current = newRank.doubleup || { tier: "UNRANKED", division: "", lp: 0 };
+            const {newRank, deltas} = await update_rank_with_delta(user.puuid, rankInfo);
+            const current = newRank.doubleup || {tier: "UNRANKED", division: "", lp: 0};
             const lpChange = formatLPChange(deltas.doubleup);
 
             // Process teammate's rank if they're tracked
@@ -289,14 +299,14 @@ async function startRiotHandler(client, channelId) {
 
                 if (teammateDb) {
                     try {
-                        const tPlatform = teammateDb.plateform || getPlatformFromRegion(teammateDb.region);
+                        const tPlatform = teammateDb.plateform;
                         const tRankInfo = await getRank(teammate.puuid, tPlatform);
                         const tres = await update_rank_with_delta(teammateDb.puuid, tRankInfo);
 
                         teammateData = {
                             username: `${teammate.riotIdGameName}`,
-                            data: { units: teammate.units },
-                            rank: tres.newRank?.doubleup || { tier: "UNRANKED", division: "", lp: 0 },
+                            data: {units: teammate.units},
+                            rank: tres.newRank?.doubleup || {tier: "UNRANKED", division: "", lp: 0},
                             lpChange: formatLPChange(tres.deltas.doubleup)
                         };
 
@@ -315,8 +325,8 @@ async function startRiotHandler(client, channelId) {
                     // Teammate exists but not tracked
                     teammateData = {
                         username: `${teammate.riotIdGameName}#${teammate.riotIdTagline}`,
-                        data: { units: teammate.units },
-                        rank: { tier: "UNRANKED", division: "", lp: 0 },
+                        data: {units: teammate.units},
+                        rank: {tier: "UNRANKED", division: "", lp: 0},
                         lpChange: ""
                     };
                 }
@@ -339,11 +349,11 @@ async function startRiotHandler(client, channelId) {
                 "doubleup"
             );
 
-            const attachment = new AttachmentBuilder(duoCard, { name: "doubleup.png" });
+            const attachment = new AttachmentBuilder(duoCard, {name: "doubleup.png"});
 
             // Only send if main user hasn't been processed by partner
             if (!processedPartners.has(user.puuid)) {
-                await channel.send({ files: [attachment] });
+                await channel.send({files: [attachment]});
             }
 
             processedPartners.add(user.puuid);
@@ -355,14 +365,13 @@ async function startRiotHandler(client, channelId) {
                 stack: err.stack,
                 matchId: last_match
             });
+
             throw err;
         }
     }
 
     async function processOtherMatch(user, data, last_match, channel) {
         try {
-            const platform = user.plateform || getPlatformFromRegion(user.region);
-
             const soloCard = await generateMatchCard(
                 user,
                 data,
@@ -373,8 +382,9 @@ async function startRiotHandler(client, channelId) {
                 "other"
             );
 
-            const attachment = new AttachmentBuilder(soloCard, { name: "other.png" });
-            await channel.send({ files: [attachment] });
+            const attachment = new AttachmentBuilder(soloCard, {name: "other.png"});
+
+            await channel.send({files: [attachment]});
             await update_last_match(user.puuid, last_match);
 
         } catch (err) {
@@ -383,6 +393,7 @@ async function startRiotHandler(client, channelId) {
                 stack: err.stack,
                 matchId: last_match
             });
+
             throw err;
         }
     }
@@ -431,4 +442,4 @@ function formatLPChange(delta) {
     return delta > 0 ? ` (+${delta} LP)` : ` (${delta} LP)`;
 }
 
-export { startRiotHandler };
+export {startRiotHandler};

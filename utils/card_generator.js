@@ -1,4 +1,4 @@
-import { createCanvas, loadImage } from "canvas";
+import {createCanvas, loadImage} from "canvas";
 import logger from "./logger.js";
 
 // Cache for loaded images to reduce API calls and improve performance
@@ -48,8 +48,10 @@ async function loadImageWithCache(url, fallbackColor = '#333') {
         // Return a placeholder colored rectangle
         const canvas = createCanvas(60, 60);
         const ctx = canvas.getContext('2d');
+
         ctx.fillStyle = fallbackColor;
         ctx.fillRect(0, 0, 60, 60);
+
         return canvas;
     }
 }
@@ -69,6 +71,7 @@ export async function generateMatchCard(
             hasData: !!data,
             hasRank: !!rank
         });
+
         throw new Error("Invalid parameters for match card generation");
     }
 
@@ -99,19 +102,19 @@ export async function generateMatchCard(
         ctx.fillRect(0, 0, width, height);
 
         // Header
-        let gamemode;
+        let gameMode;
         if (mode === "solo")
-            gamemode = "Solo Match";
-        else if (ode === "doubleup")
-            gamemode = "Double Up Match";
+            gameMode = "Solo Match";
+        else if (mode === "doubleup")
+            gameMode = "Double Up Match";
         else
-            gamemode = "Classic Match";
+            gameMode = "Classic Match";
 
         ctx.fillStyle = "white";
         ctx.font = "bold 28px Arial";
         ctx.textAlign = "left";
         ctx.fillText(
-            gamemode,
+            gameMode,
             30,
             40
         );
@@ -162,6 +165,7 @@ export async function generateMatchCard(
         }
 
         const duration = Date.now() - startTime;
+
         logger.debug(`Generated ${mode} match card in ${duration}ms`, {
             username: user.username,
             placement,
@@ -177,13 +181,15 @@ export async function generateMatchCard(
             username: user?.username,
             mode
         });
+
         throw err;
     }
 }
 
 async function drawPlayerHeader(ctx, user, rank, lpChange, placement, offsetY, mode) {
     try {
-        const x = mode === "other" ?  30 : 140;
+        const x = mode === "other" ? 30 : 140;
+
         // Validate rank object
         const safeRank = {
             tier: rank?.tier || "UNRANKED",
@@ -195,6 +201,7 @@ async function drawPlayerHeader(ctx, user, rank, lpChange, placement, offsetY, m
         ctx.fillStyle = "white";
         ctx.font = "bold 24px Arial";
         ctx.textAlign = "left";
+
         const username = user.username || "Unknown Player";
         ctx.fillText(username, x, offsetY);
 
@@ -202,6 +209,7 @@ async function drawPlayerHeader(ctx, user, rank, lpChange, placement, offsetY, m
         if (mode !== "other") {
             ctx.font = "20px Arial";
             ctx.fillStyle = "#ccc";
+
             ctx.fillText(
                 `${safeRank.tier} ${safeRank.division} ${safeRank.lp} LP${lpChange || ""}`,
                 140,
@@ -214,6 +222,7 @@ async function drawPlayerHeader(ctx, user, rank, lpChange, placement, offsetY, m
             const rankIconUrl = `https://c-tft-api.op.gg/img/set/15/tft-regalia/TFT_Regalia_${tierCaps}.png`;
 
             const icon = await loadImageWithCache(rankIconUrl, '#1a1a1a');
+
             ctx.drawImage(icon, 30, offsetY - 40, 90, 90);
         }
 
@@ -221,6 +230,7 @@ async function drawPlayerHeader(ctx, user, rank, lpChange, placement, offsetY, m
         if (placement !== null && placement !== undefined) {
             ctx.font = "20px Arial";
             ctx.fillStyle = placement <= 4 ? "#FFD700" : "yellow";
+
             ctx.fillText(`Placement: #${placement}`, x, offsetY + (mode === 'other' ? 30 : 60));
         }
 
@@ -242,7 +252,7 @@ async function drawComp(ctx, units, champSize, padding, cols, offsetY) {
     const drawPromises = units.map(async (unit, i) => {
         try {
             if (!unit || !unit.character_id) {
-                logger.warn(`Invalid unit at index ${i}`, { unit });
+                logger.warn(`Invalid unit at index ${i}`, {unit});
                 return;
             }
 
@@ -274,6 +284,7 @@ async function drawComp(ctx, units, champSize, padding, cols, offsetY) {
                         ctx.drawImage(itemImg, x + j * 20, y + champSize, 20, 20);
                     } catch (itemErr) {
                         logger.debug(`Failed to load item: ${item}`);
+                        throw itemErr;
                     }
                 });
 
