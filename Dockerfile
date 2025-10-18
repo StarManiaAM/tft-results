@@ -34,7 +34,8 @@ RUN apk add --no-cache \
 ENV NODE_ENV=production
 WORKDIR /usr/src/app
 
-RUN mkdir -p database && chown -R node:node /usr/src/app/database
+RUN mkdir -p /usr/src/app/database && chown -R node:node /usr/src/app/database
+RUN mkdir -p /usr/src/app/logs && chown -R node:node /usr/src/app/logs && chmod 750 /usr/src/app/logs
 
 COPY --from=build /usr/src/app /usr/src/app
 COPY --chown=node:node . /usr/src/app
