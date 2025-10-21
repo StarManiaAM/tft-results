@@ -15,6 +15,7 @@ async function safeGet(url, maxRetries = 3) {
 
     while (attempt <= maxRetries) {
         try {
+            logger.debug(`[API] Try to get: ${url}`, url);
             const res = await riotApi.get(url);
             return res.data;
         } catch (err) {

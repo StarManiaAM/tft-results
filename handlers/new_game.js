@@ -9,13 +9,14 @@ let stopLoop = false;
 let isShuttingDown = false;
 
 // Track processed matches across loop iterations to prevent duplicates
-const globalProcessedMatches = new Map(); // matchId -> timestamp
+const globalProcessedMatches = new Map(); // matchId -> { puuid, matchInfo, timestamp }
 const MATCH_CACHE_TTL = 1800000; // 30 minutes
 
 function cleanupMatchCache() {
     const now = Date.now();
-    for (const [matchId, timestamp] of globalProcessedMatches.entries()) {
-        if (now - timestamp > MATCH_CACHE_TTL) {
+    for (const [matchId, data] of globalProcessedMatches.entries()) {
+        if (now - data.timestamp > MATCH_CACHE_TTL) {
+            logger.debug(`${matchId} for ${data.puuid} cleared from cache`);
             globalProcessedMatches.delete(matchId);
         }
     }
@@ -67,7 +68,7 @@ async function startRiotHandler(client, channelId) {
             let successCount = 0;
             let errorCount = 0;
 
-            for (const user of users) {
+            for (let user of users) {
                 if (stopLoop || isShuttingDown) {
                     logger.info("Loop stopped or shutdown initiated");
                     break;
@@ -113,10 +114,7 @@ async function startRiotHandler(client, channelId) {
                 logger.warn(`All users failed processing (${consecutiveErrors}/${maxConsecutiveErrors})`);
             }
 
-            // // Cleanup old match cache entries periodically
-            // if (Math.random() < 0.1) { // 10% chance each iteration
-            //     cleanupMatchCache();
-            // }
+            cleanupMatchCache();
 
         } catch (err) {
             failureCount++;
@@ -167,15 +165,23 @@ async function startRiotHandler(client, channelId) {
         }
 
         // Check global cache to prevent duplicate processing
-        // if (globalProcessedMatches.has(last_match)) {
-        //     logger.debug(`Match ${last_match} already processed globally for ${user.username}`);
-        //     await update_last_match(user.puuid, last_match);
-        //     return false;
-        // }
+        const cached_data = globalProcessedMatches.get(last_match);
+        if (cached_data && cached_data.puuid === user.puuid) {
+            logger.debug(`Match ${last_match} already processed globally for ${user.username}`);
+            await update_last_match(user.puuid, last_match);
+            return false;
+
+        }
 
         logger.info(`New match detected for ${user.username}#${user.tag}: ${last_match}`);
-
-        const game_info = await getMatchInfo(user.region, last_match);
+        let game_info;
+        if (globalProcessedMatches.has(last_match)) {
+            logger.debug(`Match ${last_match} is stored in cache`);
+            game_info = globalProcessedMatches.get(last_match).game_info;
+        }
+        else {
+            game_info = await getMatchInfo(user.region, last_match);
+        }
 
         if (!game_info?.info) {
             logger.warn(`No game info available for match ${last_match}`, {
@@ -208,7 +214,7 @@ async function startRiotHandler(client, channelId) {
 
 
         // Mark match as processed globally
-        //globalProcessedMatches.set(last_match, Date.now());
+        globalProcessedMatches.set(last_match, { puuid: user.puuid, game_info: game_info, timestamp: Date.now()});
 
         return true;
     }
