@@ -113,10 +113,10 @@ async function startRiotHandler(client, channelId) {
                 logger.warn(`All users failed processing (${consecutiveErrors}/${maxConsecutiveErrors})`);
             }
 
-            // Cleanup old match cache entries periodically
-            if (Math.random() < 0.1) { // 10% chance each iteration
-                cleanupMatchCache();
-            }
+            // // Cleanup old match cache entries periodically
+            // if (Math.random() < 0.1) { // 10% chance each iteration
+            //     cleanupMatchCache();
+            // }
 
         } catch (err) {
             failureCount++;
@@ -167,11 +167,11 @@ async function startRiotHandler(client, channelId) {
         }
 
         // Check global cache to prevent duplicate processing
-        if (globalProcessedMatches.has(last_match)) {
-            logger.debug(`Match ${last_match} already processed globally for ${user.username}`);
-            await update_last_match(user.puuid, last_match);
-            return false;
-        }
+        // if (globalProcessedMatches.has(last_match)) {
+        //     logger.debug(`Match ${last_match} already processed globally for ${user.username}`);
+        //     await update_last_match(user.puuid, last_match);
+        //     return false;
+        // }
 
         logger.info(`New match detected for ${user.username}#${user.tag}: ${last_match}`);
 
@@ -208,7 +208,7 @@ async function startRiotHandler(client, channelId) {
 
 
         // Mark match as processed globally
-        globalProcessedMatches.set(last_match, Date.now());
+        //globalProcessedMatches.set(last_match, Date.now());
 
         return true;
     }
