@@ -133,7 +133,7 @@ async function startRiotHandler(client, channelId) {
 
                 try {
                     await channel.send({
-                        content: `⚠️ **Bot Health Alert**: Match tracking has encountered ${consecutiveErrors} consecutive failures. Please check the logs.`
+                        content: `> ⚠️ **Bot Health Alert**: Match tracking has encountered ${consecutiveErrors} consecutive failures. Please check the logs.`
                     });
                 } catch (sendErr) {
                     logger.error("Failed to send health alert to channel", sendErr);

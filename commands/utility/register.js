@@ -82,12 +82,12 @@ export default {
 
         // Validate inputs
         if (!username || username.length === 0) {
-            await interaction.editReply("❌ Username cannot be empty.");
+            await interaction.editReply("> ❌ Username cannot be empty.");
             return;
         }
 
         if (!tag || tag.length === 0) {
-            await interaction.editReply("❌ Tag cannot be empty.");
+            await interaction.editReply("> ❌ Tag cannot be empty.");
             return;
         }
 
@@ -98,7 +98,7 @@ export default {
 
         if (!region) {
             logger.error("Invalid platform provided", {platform});
-            await interaction.editReply("❌ Invalid platform selected.");
+            await interaction.editReply("> ❌ Invalid platform selected.");
             return;
         }
 
@@ -119,7 +119,7 @@ export default {
                 });
 
                 await interaction.editReply(
-                    `❌ Could not find player **${username}#${tag}** in region **${region}**.\n` +
+                    `>>> ❌ Could not find player **${username}#${tag}** in region **${region}**.\n` +
                     `Please verify:\n` +
                     `• Username and tag are correct\n` +
                     `• Platform matches your account region`
@@ -134,7 +134,7 @@ export default {
                 });
 
                 await interaction.editReply(
-                    `ℹ️ **${username}#${tag}** is already being tracked!`
+                    `> ℹ️ **${username}#${tag}** is already being tracked!`
                 );
 
                 return;
@@ -160,7 +160,7 @@ export default {
                 doubleupRank: rankInfo.doubleup ? `${rankInfo.doubleup.tier} ${rankInfo.doubleup.division}` : 'Unranked'
             });
 
-            let message = `✅ Successfully registered **${username}#${tag}** !\n\n`;
+            let message = `>>> ✅ Successfully registered **${username}#${tag}** !\n\n`;
             message += `**Platform:** ${platform.toUpperCase()}\n`;
             message += `**Region:** ${region}\n\n`;
 
@@ -188,7 +188,7 @@ export default {
                 region
             });
 
-            let errorMessage = `❌ Failed to register **${username}#${tag}**.`;
+            let errorMessage = `>>> ❌ Failed to register **${username}#${tag}**.`;
 
             if (err.message.includes('already registered')) {
                 errorMessage += `\n\nThis player is already being tracked.`;
