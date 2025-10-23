@@ -8,3 +8,4 @@ Dockerfile
 .vscode/
 database/
 __tests__/
+coverage/

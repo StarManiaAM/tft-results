@@ -5,6 +5,9 @@
 # Database
 database/
 
+# Tests
+coverage/
+
 # Logs
 logs
 *.log
