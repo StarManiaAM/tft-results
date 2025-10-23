@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node deploy-commands.js && node index.js",
-    "dev": "node deploy-commands.js && nodemon index.js",
+    "dev": "node deploy-commands.js && cross-env LOG_LEVEL=debug nodemon index.js",
     "lint": "eslint"
   },
   "repository": {
@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.38.0",
+    "cross-env": "^10.1.0",
     "eslint": "^9.38.0",
     "eslint-plugin-security": "^3.0.1",
     "globals": "^16.4.0",

@@ -54,7 +54,7 @@ export default {
                         division: user.rank_division,
                         lp: user.rank_lp
                     };
-                } else if (mode === "Double Up") {
+                } else if (mode === "Double UP") {
                     rankData = {
                         tier: user.doubleup_tier,
                         division: user.doubleup_division,
