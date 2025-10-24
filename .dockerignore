@@ -7,3 +7,4 @@ Dockerfile
 .idea/
 .vscode/
 database/
+__tests__/

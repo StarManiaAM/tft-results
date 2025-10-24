@@ -1,5 +1,5 @@
 import logger from "../utils/logger.js";
-import {getLastMatch, getMatchInfo, getRank} from "../utils/api.js";
+import {getLastMatch, getMatchInfo, getRank, RiotApiError} from "../utils/api.js";
 import {get_all_users, get_user, update_last_match, update_rank_with_delta} from "../utils/sql.js";
 import {AttachmentBuilder} from "discord.js";
 import {generateMatchCard} from "../utils/card_generator.js";
@@ -9,8 +9,8 @@ let stopLoop = false;
 let isShuttingDown = false;
 
 // Track processed matches across loop iterations to prevent duplicates
-const globalProcessedMatches = new Map(); // matchId -> { puuid, matchInfo, timestamp }
-const MATCH_CACHE_TTL = 1800000; // 30 minutes
+const globalProcessedMatches = new Map(); // matchId -> { puuid, game_info, timestamp }
+const MATCH_CACHE_TTL = 900000; // 15 minutes
 
 function cleanupMatchCache() {
     const now = Date.now();
@@ -35,6 +35,7 @@ async function startRiotHandler(client, channelId) {
     let running = false;
     let failureCount = 0;
     let consecutiveErrors = 0;
+    let apiKeyInvalid = false;
     const maxFailureBackoff = 10 * 60 * 1000; // 10 minutes
     const maxConsecutiveErrors = 5;
 
@@ -46,6 +47,11 @@ async function startRiotHandler(client, channelId) {
 
         if (isShuttingDown) {
             logger.info("Shutdown in progress, skipping refresh");
+            return;
+        }
+
+        if (apiKeyInvalid) {
+            logger.error("API key is invalid, skipping refresh");
             return;
         }
 
@@ -67,6 +73,7 @@ async function startRiotHandler(client, channelId) {
             const processedPartners = new Set();
             let successCount = 0;
             let errorCount = 0;
+            let skippedCount = 0;
 
             for (let user of users) {
                 if (stopLoop || isShuttingDown) {
@@ -74,21 +81,48 @@ async function startRiotHandler(client, channelId) {
                     break;
                 }
 
+                if (apiKeyInvalid) {
+                    logger.error("API key invalid, stopping user processing");
+                    break;
+                }
+
                 try {
-                    const matchProcessed = await processUserMatch(
+                    const result = await processUserMatch(
                         user,
                         channel,
                         processedPartners
                     );
 
-                    if (matchProcessed) {
+                    if (result === 'processed') {
                         successCount++;
+                    } else if (result === 'skipped') {
+                        skippedCount++;
                     }
                 } catch (userErr) {
                     errorCount++;
 
+                    // Check for API key errors
+                    if (userErr instanceof RiotApiError && userErr.isUnauthorized()) {
+                        logger.fatal(`API key is invalid or expired (${userErr.statusCode})`, {
+                            error: userErr.message,
+                            url: userErr.url
+                        });
+                        apiKeyInvalid = true;
+
+                        try {
+                            await channel.send({
+                                content: `> 🚨 **CRITICAL ERROR**: Riot API key is invalid or expired. Match tracking has been disabled. Please update the API key and restart the bot.`
+                            });
+                        } catch (sendErr) {
+                            logger.error("Failed to send API key alert to channel", sendErr);
+                        }
+                        break;
+                    }
+
                     logger.error(`Failed to process matches for user ${user.username}#${user.tag} (${user.puuid})`, {
                         error: userErr.message,
+                        errorType: userErr.name,
+                        statusCode: userErr instanceof RiotApiError ? userErr.statusCode : undefined,
                         stack: userErr.stack,
                         userId: user.puuid
                     });
@@ -101,6 +135,7 @@ async function startRiotHandler(client, channelId) {
             logger.info(`Match refresh completed in ${duration}ms`, {
                 totalUsers: users.length,
                 successCount,
+                skippedCount,
                 errorCount,
                 duration
             });
@@ -112,6 +147,10 @@ async function startRiotHandler(client, channelId) {
             } else if (errorCount === users.length) {
                 consecutiveErrors++;
                 logger.warn(`All users failed processing (${consecutiveErrors}/${maxConsecutiveErrors})`);
+            }
+            else {
+                // Partial failures don't increment consecutive errors
+                consecutiveErrors = 0;
             }
 
             cleanupMatchCache();
@@ -149,19 +188,33 @@ async function startRiotHandler(client, channelId) {
         // Skip if already processed by partner
         if (processedPartners.has(user.puuid)) {
             logger.debug(`User ${user.username} already processed via partner`);
-            return false;
+            return 'skipped';
         }
 
-        const last_match = await getLastMatch(user.puuid, user.region);
+        let last_match;
+        try {
+            last_match = await getLastMatch(user.puuid, user.region);
+        } catch (error) {
+            if (error instanceof RiotApiError) {
+                if (error.statusCode === 400) {
+                    logger.debug(`Puuid ${user.puuid} not found`);
+                    return 'skipped';
+                } else if (error.isRateLimited()) {
+                    logger.warn(`Rate limited while fetching matches for ${user.username}#${user.tag}`);
+                    throw error; // Re-throw to trigger backoff
+                }
+            }
+            throw error; // Re-throw other errors
+        }
 
         if (!last_match) {
             logger.debug(`No matches found for ${user.username}#${user.tag}`);
-            return false;
+            return 'skipped';
         }
 
         if (last_match === user.last_match) {
             logger.debug(`No new matches for ${user.username}#${user.tag}`);
-            return false;
+            return 'skipped';
         }
 
         // Check global cache to prevent duplicate processing
@@ -169,18 +222,37 @@ async function startRiotHandler(client, channelId) {
         if (cached_data && cached_data.puuid === user.puuid) {
             logger.debug(`Match ${last_match} already processed globally for ${user.username}`);
             await update_last_match(user.puuid, last_match);
-            return false;
+            return 'skipped';
 
         }
 
         logger.info(`New match detected for ${user.username}#${user.tag}: ${last_match}`);
+
         let game_info;
         if (globalProcessedMatches.has(last_match)) {
             logger.debug(`Match ${last_match} is stored in cache`);
             game_info = globalProcessedMatches.get(last_match).game_info;
         }
         else {
-            game_info = await getMatchInfo(user.region, last_match);
+            try {
+                game_info = await getMatchInfo(user.region, last_match);
+            } catch (error) {
+                if (error instanceof RiotApiError) {
+                    if (error.isNotFound()) {
+                        logger.warn(`Match ${last_match} not found for ${user.username}`, {
+                            userId: user.puuid,
+                            matchId: last_match
+                        });
+                        // Update last_match to prevent repeated attempts
+                        await update_last_match(user.puuid, last_match);
+                        return 'skipped';
+                    } else if (error.isRateLimited()) {
+                        logger.warn(`Rate limited while fetching match info ${last_match}`);
+                        throw error; // Re-throw to trigger backoff
+                    }
+                }
+                throw error; // Re-throw other errors
+            }
         }
 
         if (!game_info?.info) {
@@ -188,7 +260,7 @@ async function startRiotHandler(client, channelId) {
                 userId: user.puuid,
                 matchId: last_match
             });
-            return false;
+            return 'skipped';
         }
 
         const data = game_info.info.participants.find(p => p.puuid === user.puuid);
@@ -199,33 +271,52 @@ async function startRiotHandler(client, channelId) {
                 matchId: last_match,
                 participantCount: game_info.info.participants.length
             });
-            return false;
+            return 'skipped';
         }
 
         const queueId = game_info.info.queueId;
 
-        if (queueId === 1160) {
-            await processDoubleUpMatch(user, data, game_info, last_match, channel, processedPartners);
-        } else if (queueId === 1100) {
-            await processSoloMatch(user, data, last_match, channel);
-        } else {
-            await processOtherMatch(user, data, last_match, channel);
+        try {
+            if (queueId === 1160) {
+                await processDoubleUpMatch(user, data, game_info, last_match, channel, processedPartners);
+            } else if (queueId === 1100) {
+                await processSoloMatch(user, data, last_match, channel);
+            } else {
+                await processOtherMatch(user, data, last_match, channel);
+            }
+
+
+            // Mark match as processed globally
+            globalProcessedMatches.set(last_match, {puuid: user.puuid, game_info: game_info, timestamp: Date.now()});
+
+            return 'processed';
+        } catch (error) {
+            if (error instanceof RiotApiError && error.isNotFound()) {
+                await update_last_match(user.puuid, last_match);
+            }
+            throw error;
         }
-
-
-        // Mark match as processed globally
-        globalProcessedMatches.set(last_match, { puuid: user.puuid, game_info: game_info, timestamp: Date.now()});
-
-        return true;
     }
 
     async function processSoloMatch(user, data, last_match, channel) {
         try {
             const platform = user.plateform;
-            const rankInfo = await getRank(data.puuid, platform);
-
-            if (!rankInfo) {
-                throw new Error("Failed to retrieve rank information");
+            let rankInfo;
+            try {
+                rankInfo = await getRank(data.puuid, platform);
+            } catch (error) {
+                if (error instanceof RiotApiError) {
+                    if (error.isNotFound()) {
+                        logger.warn(`Rank not found for ${user.username}, using UNRANKED`, {
+                            userId: user.puuid
+                        });
+                        rankInfo = { solo: null, doubleup: null };
+                    } else {
+                        throw error;
+                    }
+                } else {
+                    throw error;
+                }
             }
 
             const {newRank, deltas} = await update_rank_with_delta(user.puuid, rankInfo);
@@ -258,6 +349,8 @@ async function startRiotHandler(client, channelId) {
         } catch (err) {
             logger.error(`Error processing solo match for ${user.username}`, {
                 error: err.message,
+                errorType: err.name,
+                statusCode: err instanceof RiotApiError ? err.statusCode : undefined,
                 stack: err.stack,
                 matchId: last_match
             });
@@ -288,10 +381,23 @@ async function startRiotHandler(client, channelId) {
 
             // Process main user's rank
             const platform = user.plateform;
-            const rankInfo = await getRank(data.puuid, platform);
+            let rankInfo;
 
-            if (!rankInfo) {
-                throw new Error("Failed to retrieve rank information");
+            try {
+                rankInfo = await getRank(data.puuid, platform);
+            } catch (error) {
+                if (error instanceof RiotApiError) {
+                    if (error.isNotFound()) {
+                        logger.warn(`Rank not found for ${user.username}, using UNRANKED`, {
+                            userId: user.puuid
+                        });
+                        rankInfo = { solo: null, doubleup: null };
+                    } else {
+                        throw error;
+                    }
+                } else {
+                    throw error;
+                }
             }
 
             const {newRank, deltas} = await update_rank_with_delta(user.puuid, rankInfo);
@@ -306,7 +412,21 @@ async function startRiotHandler(client, channelId) {
                 if (teammateDb) {
                     try {
                         const tPlatform = teammateDb.plateform;
-                        const tRankInfo = await getRank(teammate.puuid, tPlatform);
+                        let tRankInfo;
+
+                        try {
+                            tRankInfo = await getRank(teammate.puuid, tPlatform);
+                        } catch (error) {
+                            if (error instanceof RiotApiError && error.isNotFound()) {
+                                logger.warn(`Rank not found for teammate ${teammate.riotIdGameName}`, {
+                                    teammateId: teammate.puuid
+                                });
+                                tRankInfo = { solo: null, doubleup: null };
+                            } else {
+                                throw error;
+                            }
+                        }
+
                         const tres = await update_rank_with_delta(teammateDb.puuid, tRankInfo);
 
                         teammateData = {
@@ -323,6 +443,8 @@ async function startRiotHandler(client, channelId) {
                     } catch (teammateErr) {
                         logger.error(`Failed to process teammate ${teammate.riotIdGameName}`, {
                             error: teammateErr.message,
+                            errorType: teammateErr.name,
+                            statusCode: teammateErr instanceof RiotApiError ? teammateErr.statusCode : undefined,
                             teammateId: teammate.puuid
                         });
                         // Continue with null teammate data
@@ -368,6 +490,8 @@ async function startRiotHandler(client, channelId) {
         } catch (err) {
             logger.error(`Error processing double-up match for ${user.username}`, {
                 error: err.message,
+                errorType: err.name,
+                statusCode: err instanceof RiotApiError ? err.statusCode : undefined,
                 stack: err.stack,
                 matchId: last_match
             });
@@ -381,8 +505,8 @@ async function startRiotHandler(client, channelId) {
             const soloCard = await generateMatchCard(
                 user,
                 data,
-                0,
-                0,
+                {tier: "UNRANKED", division: "", lp: 0},
+                "",
                 data.placement,
                 null,
                 "other"
@@ -396,6 +520,7 @@ async function startRiotHandler(client, channelId) {
         } catch (err) {
             logger.error(`Error processing solo match for ${user.username}`, {
                 error: err.message,
+                errorType: err.name,
                 stack: err.stack,
                 matchId: last_match
             });
@@ -408,7 +533,7 @@ async function startRiotHandler(client, channelId) {
     await (async function scheduleLoop() {
         logger.info("Match tracking loop started");
 
-        while (!stopLoop && !isShuttingDown) {
+        while (!stopLoop && !isShuttingDown && !apiKeyInvalid) {
             try {
                 await refreshMatch();
 
@@ -433,7 +558,11 @@ async function startRiotHandler(client, channelId) {
             }
         }
 
-        logger.info("Match tracking loop stopped");
+        if (apiKeyInvalid) {
+            logger.fatal("Match tracking loop stopped due to invalid API key");
+        } else {
+            logger.info("Match tracking loop stopped");
+        }
     })();
 
     return () => {
