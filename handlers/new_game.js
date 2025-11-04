@@ -281,7 +281,7 @@ async function startRiotHandler(client, channelId) {
                 await processDoubleUpMatch(user, data, game_info, last_match, channel, processedPartners);
             } else if (queueId === 1100) {
                 await processSoloMatch(user, data, last_match, channel);
-            } else {
+            } else if (queueId === 1090){
                 await processOtherMatch(user, data, last_match, channel);
             }
 
