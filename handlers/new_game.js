@@ -264,6 +264,7 @@ async function startRiotHandler(client, channelId) {
         }
 
         const data = game_info.info.participants.find(p => p.puuid === user.puuid);
+        const set = game_info.info.tft_set_number;
 
         if (!data) {
             logger.warn(`Participant data not found for ${user.username} in match ${last_match}`, {
@@ -278,11 +279,11 @@ async function startRiotHandler(client, channelId) {
 
         try {
             if (queueId === 1160) {
-                await processDoubleUpMatch(user, data, game_info, last_match, channel, processedPartners);
+                await processDoubleUpMatch(user, data, game_info, last_match, channel, processedPartners, set);
             } else if (queueId === 1100) {
-                await processSoloMatch(user, data, last_match, channel);
+                await processSoloMatch(user, data, last_match, channel, set);
             } else if (queueId === 1090){
-                await processOtherMatch(user, data, last_match, channel);
+                await processOtherMatch(user, data, last_match, channel, set);
             }
 
 
@@ -298,7 +299,7 @@ async function startRiotHandler(client, channelId) {
         }
     }
 
-    async function processSoloMatch(user, data, last_match, channel) {
+    async function processSoloMatch(user, data, last_match, channel, set) {
         try {
             const platform = user.plateform;
             let rankInfo;
@@ -337,7 +338,8 @@ async function startRiotHandler(client, channelId) {
                 lpChange,
                 data.placement,
                 null,
-                "solo"
+                "solo",
+                set
             );
 
             const attachment = new AttachmentBuilder(soloCard, {name: "solo.png"});
@@ -359,7 +361,7 @@ async function startRiotHandler(client, channelId) {
         }
     }
 
-    async function processDoubleUpMatch(user, data, game_info, last_match, channel, processedPartners) {
+    async function processDoubleUpMatch(user, data, game_info, last_match, channel, processedPartners, set) {
         try {
             // Calculate double-up placement
             let placement = data.placement;
@@ -474,7 +476,8 @@ async function startRiotHandler(client, channelId) {
                 lpChange,
                 placement,
                 teammateData,
-                "doubleup"
+                "doubleup",
+                set
             );
 
             const attachment = new AttachmentBuilder(duoCard, {name: "doubleup.png"});
@@ -500,7 +503,7 @@ async function startRiotHandler(client, channelId) {
         }
     }
 
-    async function processOtherMatch(user, data, last_match, channel) {
+    async function processOtherMatch(user, data, last_match, channel, set) {
         try {
             const soloCard = await generateMatchCard(
                 user,
@@ -509,7 +512,8 @@ async function startRiotHandler(client, channelId) {
                 "",
                 data.placement,
                 null,
-                "other"
+                "other",
+                set
             );
 
             const attachment = new AttachmentBuilder(soloCard, {name: "other.png"});

@@ -63,7 +63,8 @@ export async function generateMatchCard(
     lpChange,
     placement,
     teammate = null,
-    mode = "solo"
+    mode = "solo",
+    set
 ) {
     if (!user || !data || (!rank && mode !== "other")) {
         logger.error("generateMatchCard called with invalid parameters", {
@@ -127,7 +128,8 @@ export async function generateMatchCard(
             lpChange,
             placement,
             80,
-            mode
+            mode,
+            set
         );
 
         // Main player comp
@@ -137,7 +139,8 @@ export async function generateMatchCard(
             champSize,
             padding,
             cols,
-            mode === "other" ? 140 : 180
+            mode === "other" ? 140 : 180,
+            set
         );
 
         // Teammate (if exists)
@@ -151,7 +154,8 @@ export async function generateMatchCard(
                 teammate.lpChange,
                 null,
                 teammateOffsetY,
-                mode
+                mode,
+                set
             );
 
             await drawComp(
@@ -160,7 +164,8 @@ export async function generateMatchCard(
                 champSize,
                 padding,
                 cols,
-                teammateOffsetY + 70
+                teammateOffsetY + 70,
+                set
             );
         }
 
@@ -186,7 +191,7 @@ export async function generateMatchCard(
     }
 }
 
-async function drawPlayerHeader(ctx, user, rank, lpChange, placement, offsetY, mode) {
+async function drawPlayerHeader(ctx, user, rank, lpChange, placement, offsetY, mode, set) {
     try {
         const x = mode === "other" ? 30 : 140;
 
@@ -219,7 +224,7 @@ async function drawPlayerHeader(ctx, user, rank, lpChange, placement, offsetY, m
             // Rank icon
             const tierLower = safeRank.tier.toLowerCase();
             const tierCaps = tierLower.charAt(0).toUpperCase() + tierLower.slice(1);
-            const rankIconUrl = `https://c-tft-api.op.gg/img/set/15/tft-regalia/TFT_Regalia_${tierCaps}.png`;
+            const rankIconUrl = `https://c-tft-api.op.gg/img/set/${set}/tft-regalia/TFT_Regalia_${tierCaps}.png`;
 
             const icon = await loadImageWithCache(rankIconUrl, '#1a1a1a');
 
@@ -243,7 +248,7 @@ async function drawPlayerHeader(ctx, user, rank, lpChange, placement, offsetY, m
     }
 }
 
-async function drawComp(ctx, units, champSize, padding, cols, offsetY) {
+async function drawComp(ctx, units, champSize, padding, cols, offsetY, set) {
     if (!Array.isArray(units) || units.length === 0) {
         logger.debug("No units to draw");
         return;
@@ -260,7 +265,7 @@ async function drawComp(ctx, units, champSize, padding, cols, offsetY) {
             const y = offsetY + Math.floor(i / cols) * (champSize + padding);
 
             const champId = unit.character_id.toLowerCase();
-            const champUrl = `https://c-tft-api.op.gg/img/set/15/tft-champion/tiles/${champId}.tft_set15.png`;
+            const champUrl = `https://c-tft-api.op.gg/img/set/${set}/tft-champion/tiles/${champId}.tft_set${set}.png`;
 
             // Draw champion
             const img = await loadImageWithCache(champUrl, '#2a2a2a');
@@ -278,7 +283,7 @@ async function drawComp(ctx, units, champSize, padding, cols, offsetY) {
                 const itemPromises = unit.itemNames.slice(0, 3).map(async (item, j) => {
                     if (!item) return;
 
-                    const itemUrl = `https://c-tft-api.op.gg/img/set/15/tft-item/${item}.png`;
+                    const itemUrl = `https://c-tft-api.op.gg/img/set/${set}/tft-item/${item}.png`;
                     try {
                         const itemImg = await loadImageWithCache(itemUrl, '#444');
                         ctx.drawImage(itemImg, x + j * 20, y + champSize, 20, 20);
