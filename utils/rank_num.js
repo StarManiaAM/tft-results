@@ -1,6 +1,7 @@
 const divisionValues = {I: 300, II: 200, III: 100, IV: 0};
 
 const tierValues = [
+    "UNRANKED",  // Index 0 = 0 points
     "IRON",
     "BRONZE",
     "SILVER",
@@ -14,7 +15,19 @@ const tierValues = [
 ];
 
 export function rankToNumeric(tier, division, lp) {
-    const tierBase = tierValues.indexOf(tier.toUpperCase()) * 400;
-    const divisionBase = divisionValues[division.toUpperCase()] || 0;
-    return tierBase + divisionBase + lp;
+    // Treat null/empty tier as UNRANKED
+    if (!tier || tier.trim() === "") {
+        tier = "UNRANKED";
+    }
+
+    const tierIndex = tierValues.indexOf(tier.toUpperCase());
+
+    // If tier not found in array, treat as UNRANKED (0 points)
+    if (tierIndex === -1) {
+        return 0;
+    }
+
+    const tierBase = tierIndex * 400;
+    const divisionBase = division ? (divisionValues[division.toUpperCase()] || 0) : 0;
+    return tierBase + divisionBase + (lp || 0);
 }

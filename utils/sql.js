@@ -292,35 +292,48 @@ export async function update_rank_with_delta(puuid, rankInfo) {
 
         const oldRank = {
             solo: {
-                tier: user.rank_tier,
+                tier: user.rank_tier || "UNRANKED",
                 division: user.rank_division,
-                lp: user.rank_lp,
+                lp: user.rank_lp || 0,
             },
             doubleup: {
-                tier: user.doubleup_tier,
+                tier: user.doubleup_tier || "UNRANKED",
                 division: user.doubleup_division,
-                lp: user.doubleup_lp,
+                lp: user.doubleup_lp || 0,
             },
         };
 
-        // Calculate deltas
-        const oldPoints_s = oldRank.solo?.tier
-            ? rankToNumeric(oldRank.solo.tier, oldRank.solo.division || "", oldRank.solo.lp || 0)
-            : 0;
-        const newPoints_s = rankInfo.solo?.tier
-            ? rankToNumeric(rankInfo.solo.tier, rankInfo.solo.division || "", rankInfo.solo.lp || 0)
-            : 0;
+        // Calculate points - rankToNumeric now handles null/empty values
+        const oldPoints_s = rankToNumeric(
+            oldRank.solo.tier,
+            oldRank.solo.division,
+            oldRank.solo.lp
+        );
+        const newPoints_s = rankToNumeric(
+            rankInfo.solo?.tier || "UNRANKED",
+            rankInfo.solo?.division,
+            rankInfo.solo?.lp || 0
+        );
 
-        const oldPoints_d = oldRank.doubleup?.tier
-            ? rankToNumeric(oldRank.doubleup.tier, oldRank.doubleup.division || "", oldRank.doubleup.lp || 0)
-            : 0;
-        const newPoints_d = rankInfo.doubleup?.tier
-            ? rankToNumeric(rankInfo.doubleup.tier, rankInfo.doubleup.division || "", rankInfo.doubleup.lp || 0)
-            : 0;
+        const oldPoints_d = rankToNumeric(
+            oldRank.doubleup.tier,
+            oldRank.doubleup.division,
+            oldRank.doubleup.lp
+        );
+        const newPoints_d = rankToNumeric(
+            rankInfo.doubleup?.tier || "UNRANKED",
+            rankInfo.doubleup?.division,
+            rankInfo.doubleup?.lp || 0
+        );
 
+        // Calculate deltas - only show delta if user was previously ranked (not UNRANKED)
         const deltas = {
-            solo: oldPoints_s > 0 ? newPoints_s - oldPoints_s : null,
-            doubleup: oldPoints_d > 0 ? newPoints_d - oldPoints_d : null,
+            solo: (oldRank.solo.tier !== "UNRANKED" && user.rank_tier)
+                ? newPoints_s - oldPoints_s
+                : null,
+            doubleup: (oldRank.doubleup.tier !== "UNRANKED" && user.doubleup_tier)
+                ? newPoints_d - oldPoints_d
+                : null,
         };
 
         // Update user rank

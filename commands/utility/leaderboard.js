@@ -24,9 +24,12 @@ export default {
         // Validate inputs
         if (!mode) {
             logger.error("Invalid mode provided", {mode});
-            await interaction.editReply("> ❌ Invalid mode selected.")
+            await interaction.reply("> ❌ Invalid mode selected.");
             return;
         }
+
+        // Defer the reply to allow more time for processing
+        await interaction.deferReply();
 
         logger.info(`Leaderboard request received for ${mode} mode`, {
             requestedBy: interaction.user.tag,
@@ -36,11 +39,8 @@ export default {
         try {
             const users = await get_all_users();
             if (!users || users.length === 0) {
-                logger.info("No users found.", {
-                    mode
-                });
-
-                await interaction.reply(`> ℹ️ No data for ${mode}`);
+                logger.info("No users found.", {mode});
+                await interaction.editReply(`> ℹ️ No data for ${mode}`);
                 return;
             }
 
@@ -50,40 +50,37 @@ export default {
                 let rankData = null;
                 if (mode === "Solo") {
                     rankData = {
-                        tier: user.rank_tier,
+                        tier: user.rank_tier || "UNRANKED",
                         division: user.rank_division,
-                        lp: user.rank_lp
+                        lp: user.rank_lp || 0
                     };
                 } else if (mode === "Double UP") {
                     rankData = {
-                        tier: user.doubleup_tier,
+                        tier: user.doubleup_tier || "UNRANKED",
                         division: user.doubleup_division,
-                        lp: user.doubleup_lp
+                        lp: user.doubleup_lp || 0
                     };
                 }
 
-                if (rankData) {
-                    const points = rankToNumeric(
-                        rankData.tier,
-                        rankData.division,
-                        rankData.lp
-                    );
+                const points = rankToNumeric(
+                    rankData.tier,
+                    rankData.division,
+                    rankData.lp
+                );
 
-                    leaderboard.push({
-                        name: `${user.username}#${user.tag}`,
-                        points,
-                        rankStr: `${rankData.tier} ${rankData.division || ""} ${
-                            rankData.lp
-                        } LP`,
-                    });
-
+                // Create display string
+                let rankStr;
+                if (!rankData.tier || rankData.tier === "UNRANKED" || rankData.tier.trim() === "") {
+                    rankStr = "Unranked";
                 } else {
-                    leaderboard.push({
-                        name: `${user.username}#${user.tag}`,
-                        points: 0,
-                        rankStr: "Unranked",
-                    });
+                    rankStr = `${rankData.tier} ${rankData.division || ""} ${rankData.lp} LP`.trim();
                 }
+
+                leaderboard.push({
+                    name: `${user.username}#${user.tag}`,
+                    points,
+                    rankStr,
+                });
             }
 
             leaderboard.sort((a, b) => b.points - a.points);
@@ -97,7 +94,7 @@ export default {
                 totalUsers: leaderboard.length
             });
 
-            await interaction.reply(`>>> 🏆 Leaderboard ${mode}:\n${message}`);
+            await interaction.editReply(`>>> 🏆 Leaderboard ${mode}:\n${message}`);
         } catch (err) {
             logger.error("Failed to generate leaderboard", {
                 error: err.message,
