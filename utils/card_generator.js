@@ -264,7 +264,9 @@ async function drawComp(ctx, units, champSize, padding, cols, offsetY, set) {
             const x = padding + (i % cols) * (champSize + padding);
             const y = offsetY + Math.floor(i / cols) * (champSize + padding);
 
-            const champId = unit.character_id.toLowerCase();
+            let champId = unit.character_id.toLowerCase();
+            if (champId === 'tft17_rhaast')
+                champId = 'tft17_kayn_slay';
             const champUrl = `https://c-tft-api.op.gg/img/set/${set}/tft-champion/tiles/${champId}.tft_set${set}.png`;
 
             // Draw champion
