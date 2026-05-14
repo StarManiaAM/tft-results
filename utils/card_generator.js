@@ -267,7 +267,9 @@ async function drawComp(ctx, units, champSize, padding, cols, offsetY, set) {
             let champId = unit.character_id.toLowerCase();
             if (champId === 'tft17_rhaast')
                 champId = 'tft17_kayn_slay';
-            const champUrl = `https://c-tft-api.op.gg/img/set/${set}/tft-champion/tiles/${champId}.tft_set${set}.png`;
+            let champUrl = `https://c-tft-api.op.gg/img/set/${set}/tft-champion/tiles/${champId}.tft_set${set}.png`;
+            if (champId === 'tft17_pve_elderdragon')
+                champUrl = 'https://c-tft-api.op.gg/img/set/17/tft-champion/skills/TFT17_PVE_ElderDragon.png';
 
             // Draw champion
             const img = await loadImageWithCache(champUrl, '#2a2a2a');
