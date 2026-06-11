@@ -270,6 +270,8 @@ async function drawComp(ctx, units, champSize, padding, cols, offsetY, set) {
             let champUrl = `https://c-tft-api.op.gg/img/set/${set}/tft-champion/tiles/${champId}.tft_set${set}.png`;
             if (champId === 'tft17_pve_elderdragon')
                 champUrl = 'https://c-tft-api.op.gg/img/set/17/tft-champion/skills/TFT17_PVE_ElderDragon.png';
+            if (champId === 'tft17_diana')
+                champUrl = 'https://c-tft-api.op.gg/img/set/17/tft-champion/tiles/tft17_diana_teamplanner_splash.tft_set17.png';
 
             // Draw champion
             const img = await loadImageWithCache(champUrl, '#2a2a2a');
