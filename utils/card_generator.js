@@ -264,10 +264,18 @@ async function drawComp(ctx, units, champSize, padding, cols, offsetY, set) {
             const x = padding + (i % cols) * (champSize + padding);
             const y = offsetY + Math.floor(i / cols) * (champSize + padding);
 
-            let champId = unit.character_id.toLowerCase();
+            let champId = unit.character_id.toLowerCase().slice(3);
+            if (set === 18) {
+                champId = champId
+                    .replace(new RegExp(`^18_`), '')
+                    .replace(new RegExp(`18$`), '');
+                champId = '18_' + champId;
+            }
             if (champId === 'tft17_rhaast')
                 champId = 'tft17_kayn_slay';
-            let champUrl = `https://c-tft-api.op.gg/img/set/${set}/tft-champion/tiles/tft_${set}_${champId}.tft_set${set}.png`;
+            if (champId === '18_gnarsmall')
+                champId = '18_gnar';
+            let champUrl = `https://c-tft-api.op.gg/img/set/${set}/tft-champion/tiles/tft${champId}.tft_set${set}.jpg`;
             if (champId === 'tft17_pve_elderdragon')
                 champUrl = 'https://c-tft-api.op.gg/img/set/17/tft-champion/skills/TFT17_PVE_ElderDragon.png';
             if (champId === 'tft17_diana')
