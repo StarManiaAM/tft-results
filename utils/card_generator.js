@@ -275,9 +275,11 @@ async function drawComp(ctx, units, champSize, padding, cols, offsetY, set) {
                 champId = 'tft17_kayn_slay';
             if (champId === '18_gnarsmall')
                 champId = '18_gnar';
-            let champUrl = `https://c-tft-api.op.gg/img/set/${set}/tft-champion/tiles/tft${champId}.tft_set${set}.jpg`;
+            if (champId === '18_gromp18_ap')
+                champId = '18_gromp';
             if (champId === '18_crimsonraptor')
-                champUrl = 'https://cdn.lolchess.gg/upload/images/champions/Raptor_1783677107-CrimsonRaptor.jpg';
+                champId = '18_raptor';
+            let champUrl = `https://c-tft-api.op.gg/img/set/${set}/tft-champion/tiles/tft${champId}.tft_set${set}.jpg`;
             if (champId === 'tft17_pve_elderdragon')
                 champUrl = 'https://c-tft-api.op.gg/img/set/17/tft-champion/skills/TFT17_PVE_ElderDragon.png';
             if (champId === 'tft17_diana')
