@@ -279,6 +279,8 @@ async function drawComp(ctx, units, champSize, padding, cols, offsetY, set) {
                 champId = '18_gromp';
             if (champId === '18_crimsonraptor')
                 champId = '18_raptor';
+            if (champId === '18_lux18_base')
+                champId = '18_lux';
             let champUrl = `https://c-tft-api.op.gg/img/set/${set}/tft-champion/tiles/tft${champId}.tft_set${set}.jpg`;
             if (champId === 'tft17_pve_elderdragon')
                 champUrl = 'https://c-tft-api.op.gg/img/set/17/tft-champion/skills/TFT17_PVE_ElderDragon.png';
