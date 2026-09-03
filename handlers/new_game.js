@@ -432,6 +432,19 @@ async function startRiotHandler(client, channelId) {
         }
     }
 
+    function findDoubleUpTeammate(participants, userData) {
+        const teammatePlacement =
+            userData.placement % 2 === 0
+                ? userData.placement - 1
+                : userData.placement + 1;
+
+        return participants.find(
+            (p) =>
+                p.puuid !== userData.puuid &&
+                p.placement === teammatePlacement
+        );
+    }
+
     async function processDoubleUpMatch(
         user,
         data,
@@ -448,10 +461,9 @@ async function startRiotHandler(client, channelId) {
             if (placement % 2 !== 0) placement++;
             placement = placement / 2;
 
-            const partnerId = data.partner_group_id;
-            const teammate = game_info.info.participants.find(
-                (p) =>
-                    p.partner_group_id === partnerId && p.puuid !== user.puuid
+            const teammate = findDoubleUpTeammate(
+                game_info.info.participants,
+                data
             );
 
             if (!teammate) {
