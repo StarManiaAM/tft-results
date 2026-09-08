@@ -6,6 +6,13 @@ const imageCache = new Map();
 const CACHE_MAX_SIZE = 200;
 const CACHE_TTL = 3600000; // 1 hour
 
+// Icône SVG op.gg convertie en Data URL (aucune requête réseau requise)
+const GOLD_ICON_SVG = `data:image/svg+xml;base64,${Buffer.from(`
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 16 16">
+  <path fill="#EAB308" fill-rule="evenodd" d="M14 7.299c0 .917-.965 1.758-2.4 2.213V10.9c0 1.368-2.148 2.568-4.8 2.568S2 12.267 2 10.899V8.835c0-.917.965-1.759 2.4-2.214V5.235c0-1.368 2.148-2.568 4.8-2.568s4.8 1.2 4.8 2.568zM9.2 9.867c-1.783 0-3.339-.543-4.167-1.314a4.8 4.8 0 0 0-1.113.534v1.56a4.8 4.8 0 0 0 2.88.768 4.8 4.8 0 0 0 2.88-.768v-.794a9 9 0 0 1-.48.014" clip-rule="evenodd"/>
+</svg>
+`).toString('base64')}`;
+
 function cleanImageCache() {
     if (imageCache.size > CACHE_MAX_SIZE) {
         const entriesToDelete = imageCache.size - CACHE_MAX_SIZE;
@@ -120,6 +127,9 @@ export async function generateMatchCard(
             40
         );
 
+        // Calcul des coûts
+        const userCompCost = calculateCompCost(userUnits);
+
         // Main player info
         await drawPlayerHeader(
             ctx,
@@ -129,7 +139,8 @@ export async function generateMatchCard(
             placement,
             80,
             mode,
-            set
+            set,
+            userCompCost
         );
 
         // Main player comp
@@ -146,6 +157,7 @@ export async function generateMatchCard(
         // Teammate (if exists)
         if (teammate) {
             const teammateOffsetY = 250 + rowsUser * (champSize + padding);
+            const teammateCompCost = calculateCompCost(teammateUnits);
 
             await drawPlayerHeader(
                 ctx,
@@ -155,7 +167,8 @@ export async function generateMatchCard(
                 null,
                 teammateOffsetY,
                 mode,
-                set
+                set,
+                teammateCompCost
             );
 
             await drawComp(
@@ -191,7 +204,7 @@ export async function generateMatchCard(
     }
 }
 
-async function drawPlayerHeader(ctx, user, rank, lpChange, placement, offsetY, mode, set) {
+async function drawPlayerHeader(ctx, user, rank, lpChange, placement, offsetY, mode, set, compCost = 0) {
     try {
         const x = mode === "other" ? 30 : 140;
 
@@ -231,13 +244,32 @@ async function drawPlayerHeader(ctx, user, rank, lpChange, placement, offsetY, m
             ctx.drawImage(icon, 30, offsetY - 40, 90, 90);
         }
 
-        // Placement (if provided)
+        // --- AFFICHAGE PLACEMENT ET COÛT EN GOLD ---
+        const infoY = offsetY + (mode === 'other' ? 30 : 60);
+
+        // 1. Placement (s'il existe)
+        let currentX = x;
         if (placement !== null && placement !== undefined) {
             ctx.font = "20px Arial";
             ctx.fillStyle = placement <= 4 ? "#FFD700" : "yellow";
+            const placementText = `Placement: #${placement}`;
+            ctx.fillText(placementText, currentX, infoY);
 
-            ctx.fillText(`Placement: #${placement}`, x, offsetY + (mode === 'other' ? 30 : 60));
+            // On décale le X pour afficher les golds juste à côté s'il y a un placement
+            currentX += ctx.measureText(placementText).width + 25;
         }
+
+        // 2. Icône et valeur des Golds (CommunityDragon CDN asset officiel TFT)
+        // Chargement immédiat sans appel réseau
+        const goldIcon = await loadImageWithCache(GOLD_ICON_SVG, '#FFD700');
+        const iconSize = 20;
+
+        // Affichage de l'icône SVG et du texte
+        ctx.drawImage(goldIcon, currentX, infoY - 16, iconSize, iconSize);
+
+        ctx.font = "bold 20px Arial";
+        ctx.fillStyle = "#FFD700";
+        ctx.fillText(`${compCost}g`, currentX + iconSize + 6, infoY);
 
     } catch (err) {
         logger.error("Error drawing player header", {
@@ -248,13 +280,42 @@ async function drawPlayerHeader(ctx, user, rank, lpChange, placement, offsetY, m
     }
 }
 
+function calculateCompCost(units) {
+    if (!Array.isArray(units)) return 0;
+
+    return units.reduce((total, unit) => {
+        if (!unit) return total;
+
+        const rarity = (unit.rarity !== undefined && unit.rarity !== null) ? unit.rarity : 0;
+        const unitCost = rarity + 1; // Rareté 0 = 1 gold, Rareté 1 = 2 gold, etc.
+        const tier = unit.tier || 1;
+
+        let multiplier = 1;
+        if (tier === 1) multiplier = 1;
+        else if (tier === 2) multiplier = 3;
+        else if (tier === 3) multiplier = 9;
+        else if (tier === 24) multiplier = 27; // Pour les unités spéciales à 4 étoiles / 24
+
+        return total + (unitCost * multiplier);
+    }, 0);
+}
+
 async function drawComp(ctx, units, champSize, padding, cols, offsetY, set) {
     if (!Array.isArray(units) || units.length === 0) {
         logger.debug("No units to draw");
         return;
     }
 
-    const drawPromises = units.map(async (unit, i) => {
+    // Copie et tri du tableau selon la rareté (rarity) du champion
+    // Ordre croissant : (a.rarity || 0) - (b.rarity || 0)  [Ex: Rareté 0 -> 5]
+    // (Pour un ordre décroissant, inversez : b.rarity - a.rarity)
+    const sortedUnits = [...units].sort((a, b) => {
+        const rarityA = a?.rarity ?? 0;
+        const rarityB = b?.rarity ?? 0;
+        return rarityA - rarityB; 
+    });
+
+    const drawPromises = sortedUnits.map(async (unit, i) => {
         try {
             if (!unit || !unit.character_id) {
                 logger.warn(`Invalid unit at index ${i}`, {unit});
