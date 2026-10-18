@@ -1,0 +1,14 @@
+services:
+  pengu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pengu
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - sqlite:/usr/src/app/database
+
+volumes:
+  sqlite
