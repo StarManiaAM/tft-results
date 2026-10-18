@@ -9,7 +9,8 @@ RUN apk add --no-cache \
     cairo-dev \
     jpeg-dev \
     pango-dev \
-    giflib-dev
+    giflib-dev \
+    librsvg-dev
 
 WORKDIR /usr/src/app
 
@@ -27,6 +28,7 @@ RUN apk add --no-cache \
     jpeg \
     pango \
     giflib \
+    librsvg \
     fontconfig \
     ttf-dejavu \
     ttf-freefont

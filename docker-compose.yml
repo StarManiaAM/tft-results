@@ -3,7 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: pengu:latest
     container_name: pengu
+    pull_policy: build
     restart: unless-stopped
     env_file:
       - .env
@@ -12,3 +14,4 @@ services:
 
 volumes:
   sqlite:
+    name: pengu_sqlite
